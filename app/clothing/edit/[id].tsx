@@ -11,15 +11,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { decode } from 'base64-arraybuffer';
 import { getClothingById, updateClothing as updateClothingService, uploadClothingImage } from '../../../services/clothingService';
 import { subtypesByType, types } from '../../../constants/Clothes';
+import ColorSelector from '../../../components/ColorSelector';
+import BrandSelector from '../../../components/BrandSelector';
+import PatternSelector from '../../../components/PatternSelector';
+import MaterialSelector from '../../../components/MaterialSelector';
 
 export default function EditClothingScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
   const [name, setName] = useState('');
-  const [brand, setBrand] = useState('');
+  const [brand, setBrand] = useState<string | null>(null);
   const [type, setType] = useState<ClothingType>('top');
   const [subtype, setSubtype] = useState<ClothingSubType | undefined>(undefined);
-  const [color, setColor] = useState('');
+  const [color, setColor] = useState<string | null>(null);
+  const [pattern, setPattern] = useState<string | null>(null);
+  const [material, setMaterial] = useState<string | null>(null);
   const [fit, setFit] = useState<string | undefined>(undefined);
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -27,15 +33,6 @@ export default function EditClothingScreen() {
   const [originalImage, setOriginalImage] = useState<string | null>(null);
   const [imageChanged, setImageChanged] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-
-  // Mettre à jour le sous-type quand le type change, sauf au chargement initial
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
-  
-  useEffect(() => {
-    if (!isInitialLoad) {
-      setSubtype(undefined);
-    }
-  }, [type, isInitialLoad]);
 
   useEffect(() => {
     fetchClothingItem();
@@ -50,14 +47,15 @@ export default function EditClothingScreen() {
 
       if (data) {
         setName(data.name || '');
-        setBrand(data.brand || '');
+        setBrand(data.brand || null);
         setType(data.type || 'top');
-        setSubtype(data.subtype);
-        setColor(data.color || '');
+        setSubtype(data.subtype || 't-shirt');
+        setColor(data.color || null);
+        setPattern(data.pattern || null);
+        setMaterial(data.material || null);
         setFit(data.fit || undefined);
         setImage(data.image_url);
         setOriginalImage(data.image_url);
-        setIsInitialLoad(false);
       } else {
         Alert.alert('Erreur', 'Impossible de charger les informations du vêtement.');
         router.back();
@@ -96,12 +94,15 @@ export default function EditClothingScreen() {
       }
 
       // Utiliser des assertions de type pour s'assurer que les types correspondent
+      console.log('material', material);
       const clothingData = {
         name,
         brand: brand || undefined,
         type,
         subtype,
         color,
+        pattern,
+        material: material || undefined,
         fit: fit as 'slim' | 'regular' | 'loose' | 'oversize' | undefined,
         image_url: imageUrl,
       };
@@ -134,7 +135,7 @@ export default function EditClothingScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color="#F97A5C" />
       </View>
     );
   }
@@ -174,11 +175,9 @@ export default function EditClothingScreen() {
         />
 
         <Text style={styles.label}>Marque</Text>
-        <TextInput
-          style={styles.input}
-          value={brand}
-          onChangeText={setBrand}
-          placeholder="Ex: Nike"
+        <BrandSelector 
+          selectedBrand={brand}
+          onBrandSelect={setBrand}
         />
 
         <Text style={styles.label}>Type*</Text>
@@ -209,11 +208,21 @@ export default function EditClothingScreen() {
         </View>
 
         <Text style={styles.label}>Couleur*</Text>
-        <TextInput
-          style={styles.input}
-          value={color}
-          onChangeText={setColor}
-          placeholder="Ex: Blanc"
+        <ColorSelector 
+          selectedColor={color}
+          onColorSelect={setColor}
+        />
+
+        <Text style={styles.label}>Motif</Text>
+        <PatternSelector 
+          selectedPattern={pattern}
+          onPatternSelect={setPattern}
+        />
+
+        <Text style={styles.label}>Matériau</Text>
+        <MaterialSelector 
+          selectedMaterial={material}
+          onMaterialSelect={setMaterial}
         />
 
         <Text style={styles.label}>Coupe</Text>
@@ -305,7 +314,7 @@ const styles = StyleSheet.create({
     height: 50,
   },
   saveButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#F97A5C',
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',

@@ -1,7 +1,6 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
-import Colors from '../../constants/Colors';
+import { ColorsTheme } from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { useEffect } from 'react';
 import { router } from 'expo-router';
@@ -13,7 +12,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
  */
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
   const { user, loading } = useAuth();
 
   // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
@@ -31,7 +29,8 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: ColorsTheme.primary.main,
+        tabBarInactiveTintColor: ColorsTheme.background.main,
         tabBarStyle: { paddingBottom: 5, height: 60 },
         tabBarLabelStyle: { fontSize: 12 },
         headerShown: false,

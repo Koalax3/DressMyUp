@@ -1,37 +1,40 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
-import { supabase } from '../../constants/Supabase';
-import { useAuth } from '../../contexts/AuthContext';
-import { Outfit, User } from '../../types';
-import { Ionicons } from '@expo/vector-icons';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Animated } from 'react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { useScroll } from '@/contexts/ScrollContext';
+import { ClothingItem, Outfit, User } from '@/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
-import OutfitPreview from '../../components/OutfitPreview';
+import OutfitPreview from '@/components/OutfitPreview';
+import Header from '@/components/Header';
+import Button from '@/components/Button';
+import { fetchOutfitsForExplore } from '@/services/outfitService';
+import { fetchUserClothes } from '@/services/clothingService';
 
 // Type simplifié pour l'affichage des tenues
-type OutfitWithUser = Outfit & { user: User };
+type OutfitWithUser = Outfit & { user: User } & { clothes: ClothingItem[] };
 
 export default function ExploreScreen() {
   const { user } = useAuth();
   const [outfits, setOutfits] = useState<OutfitWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const { scrollY } = useScroll();
+  const [clothesUser, setClothesUser] = useState<ClothingItem[]>([]);
 
+  useEffect(() => {
+    const fetchClothesUser = async () => {
+      if (!user) return;
+      const clothes = await fetchUserClothes(user.id, []);
+      setClothesUser(clothes);
+    };
+    fetchClothesUser();
+  }, [user]);
   const fetchOutfits = async () => {
     if (!user) return;
-
     try {
       setLoading(true);
-      let query = supabase
-        .from('outfits')
-        .select(`
-          *,
-          user:user_id (*)
-        `)
-        .order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
+      const { data, error } = await fetchOutfitsForExplore(user.id);
       if (error) {
         console.error('Erreur lors de la récupération des tenues:', error);
       } else {
@@ -62,93 +65,19 @@ export default function ExploreScreen() {
     fetchOutfits();
   };
 
-  const handleLike = async (outfitId: string) => {
-    if (!user) return;
-
-    try {
-      // Vérifier si l'utilisateur a déjà aimé cette tenue
-      const { data: existingLike, error: checkError } = await supabase
-        .from('likes')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('outfit_id', outfitId)
-        .single();
-
-      if (checkError && checkError.code !== 'PGRST116') {
-        console.error('Erreur lors de la vérification du like:', checkError);
-        return;
-      }
-
-      if (existingLike) {
-        // Supprimer le like
-        const { error: deleteError } = await supabase
-          .from('likes')
-          .delete()
-          .eq('id', existingLike.id);
-
-        if (deleteError) {
-          console.error('Erreur lors de la suppression du like:', deleteError);
-          return;
-        }
-
-        // Mettre à jour le compteur de likes
-        await supabase.rpc('decrement_likes', { outfit_id: outfitId });
-      } else {
-        // Ajouter un like
-        const { error: insertError } = await supabase
-          .from('likes')
-          .insert([
-            {
-              user_id: user.id,
-              outfit_id: outfitId,
-              created_at: new Date().toISOString(),
-            },
-          ]);
-
-        if (insertError) {
-          console.error('Erreur lors de l\'ajout du like:', insertError);
-          return;
-        }
-
-        // Mettre à jour le compteur de likes
-        await supabase.rpc('increment_likes', { outfit_id: outfitId });
-      }
-
-      // Rafraîchir les tenues
-      fetchOutfits();
-    } catch (error) {
-      console.error('Erreur:', error);
-    }
-  };
-
   const renderOutfitItem = ({ item }: { item: OutfitWithUser }) => (
-    <OutfitPreview outfit={item} onLike={handleLike} />
+    <OutfitPreview outfit={item} userWardrobe={clothesUser} />
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Explorer</Text>
-        <View style={styles.separator} />
-      </View>
+      <Header title={'Explorer'} >
+       {/* <Button icon="search-outline" onPress={() => router.push('/(tabs)/create')} type="secondary" /> */}
+      </Header>
 
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#FF6B6B" />
-        </View>
-      ) : outfits.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="shirt-outline" size={80} color="#ccc" />
-          <Text style={styles.emptyText}>Aucune tenue trouvée</Text>
-          <Text style={styles.emptySubtext}>
-            Soyez le premier à partager une tenue !
-          </Text>
-          <TouchableOpacity 
-            style={styles.createButton}
-            onPress={() => router.push('/(tabs)/create')}
-          >
-            <Text style={styles.createButtonText}>Créer une tenue</Text>
-          </TouchableOpacity>
+          <ActivityIndicator size="large" color="#F97A5C" />
         </View>
       ) : (
         <FlatList
@@ -160,8 +89,13 @@ export default function ExploreScreen() {
           columnWrapperStyle={styles.columnWrapper}
           showsVerticalScrollIndicator={false}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#FF6B6B']} />
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={['#F97A5C']} />
           }
+          onScroll={Animated.event(
+            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+            { useNativeDriver: false }
+          )}
+          scrollEventThrottle={16}
         />
       )}
     </SafeAreaView>
@@ -172,16 +106,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-  },
-  title: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 5,
   },
   separator: {
     height: 1,
@@ -219,7 +143,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   createButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#F97A5C',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -228,5 +152,11 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  searchButton: {
+    backgroundColor: '#F97A5C',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderRadius: 100,
   },
 }); 

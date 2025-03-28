@@ -1,3 +1,5 @@
+import { Pattern } from '@/constants/Clothes';
+
 export type User = {
   id: string;
   email: string;
@@ -11,22 +13,25 @@ export type ClothingType = 'top' | 'bottom' | 'shoes' | 'accessory' | 'ensemble'
 
 export type ClothingSubType = 
   | 'tshirt' | 'polo' | 'shirt' | 'sweater' | 'sweatshirt' | 'jacket' | 'coat' | 'blazer'  // top
-  | 'jeans' | 'pants' | 'shorts' | 'skirt'  // bottom
-  | 'sneakers' | 'boots' | 'flats' | 'heels' | 'sandals'  // shoes
-  | 'hat' | 'scarf' | 'belt' | 'bag' | 'socks' | 'jewelry' | 'watch' | 'glasses'  // accessory
-  | 'dress' | 'jumpsuit' | 'suit';  // ensemble
+  | 'jeans' | 'pants' | 'shorts' | 'skirt' | 'sweatpants'   // bottom
+  | 'sneakers' | 'boots' | 'flats' | 'heels' | 'sandals' | 'mocassin' | 'hoof' | 'slipper' | 'dress_shoes'  // shoes
+  | 'hat' | 'scarf' | 'belt' | 'bag' | 'socks' | 'jewelry' | 'watch' | 'glasses' | 'nylon' // accessory
+  | 'dress' | 'jumpsuit' | 'suit' | 'overalls';  // ensemble
 
 export type ClothingItem = {
   id: string;
   user_id: string;
   name: string;
   type: ClothingType;
-  subtype?: ClothingSubType;
+  subtype: ClothingSubType;
   brand?: string;
   color: string;
   fit?: 'slim' | 'regular' | 'loose' | 'oversize';
+  pattern: Pattern | null;
+  material?: string;
   image_url: string;
   created_at: string;
+  clothe?: ClothingItem;
 };
 
 export type Outfit = {
@@ -37,7 +42,12 @@ export type Outfit = {
   image_url?: string;
   season?: 'spring' | 'summer' | 'fall' | 'winter' | 'all';
   occasion?: 'casual' | 'formal' | 'sport' | 'party' | 'work';
+  isPublic?: boolean;
+  gender?: 'male' | 'female' | 'unisex';
   created_at: string;
+  user: User;
+  likes?: Like[]; 
+  clothes?: (ClothingItem & { clothe?: ClothingItem })[];
 };
 
 export type ClothesOutfit = {

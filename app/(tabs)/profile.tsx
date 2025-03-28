@@ -165,7 +165,7 @@ export default function ProfileScreen() {
         <Text style={styles.outfitName}>{item.name}</Text>
         <View style={styles.outfitStats}>
           <View style={styles.outfitStat}>
-            <Ionicons name="heart" size={16} color="#FF6B6B" />
+            <Ionicons name="heart" size={16} color="#F97A5C" />
             <Text style={styles.outfitStatText}>{item.likes_count}</Text>
           </View>
           <View style={styles.outfitStat}>
@@ -180,7 +180,7 @@ export default function ProfileScreen() {
   if (!user) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color="#F97A5C" />
       </View>
     );
   }
@@ -213,71 +213,23 @@ export default function ProfileScreen() {
           </TouchableOpacity>
 
           <Text style={styles.username}>{user.username}</Text>
-          {user.bio && <Text style={styles.bio}>{user.bio}</Text>}
+          {<Text style={styles.bio}>{user.bio}</Text>}
 
           <View style={styles.statsContainer}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>{stats.outfitsCount}</Text>
               <Text style={styles.statLabel}>Tenues</Text>
             </View>
-            <TouchableOpacity style={styles.statItem} onPress={() => router.push('/followers')}>
+            {/* <TouchableOpacity style={styles.statItem} onPress={() => router.push('/followers')}>
               <Text style={styles.statValue}>{stats.followersCount}</Text>
               <Text style={styles.statLabel}>Fans</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.statItem} onPress={() => router.push('/following')}>
               <Text style={styles.statValue}>{stats.followingCount}</Text>
               <Text style={styles.statLabel}>Idoles</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
-
-          <TouchableOpacity 
-            style={styles.editProfileButton}
-            onPress={() => router.push('/edit-profile')}
-          >
-            <Text style={styles.editProfileButtonText}>Modifier le profil</Text>
-          </TouchableOpacity>
         </View>
-
-        <View style={styles.tabsContainer}>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'outfits' && styles.activeTab]}
-            onPress={() => setActiveTab('outfits')}
-          >
-            <Text style={[styles.tabText, activeTab === 'outfits' && styles.activeTabText]}>Mes tenues</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tab, activeTab === 'likes' && styles.activeTab]}
-            onPress={() => setActiveTab('likes')}
-          >
-            <Text style={[styles.tabText, activeTab === 'likes' && styles.activeTabText]}>Mes likes</Text>
-          </TouchableOpacity>
-        </View>
-
-        {loading ? (
-          <View style={styles.loadingContent}>
-            <ActivityIndicator size="large" color="#FF6B6B" />
-          </View>
-        ) : activeTab === 'outfits' && outfits.length === 0 ? (
-          <View style={styles.emptyContainer}>
-            <Ionicons name="shirt-outline" size={60} color="#ccc" />
-            <Text style={styles.emptyText}>Vous n'avez pas encore créé de tenue</Text>
-            <TouchableOpacity 
-              style={styles.createButton}
-              onPress={() => router.push('/(tabs)/create')}
-            >
-              <Text style={styles.createButtonText}>Créer une tenue</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          <FlatList
-            data={outfits}
-            renderItem={renderOutfitItem}
-            keyExtractor={(item) => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.outfitList}
-            scrollEnabled={false}
-          />
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -328,7 +280,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#F97A5C',
     width: 30,
     height: 30,
     borderRadius: 15,
@@ -389,14 +341,14 @@ const styles = StyleSheet.create({
   },
   activeTab: {
     borderBottomWidth: 2,
-    borderBottomColor: '#FF6B6B',
+    borderBottomColor: '#F97A5C',
   },
   tabText: {
     fontSize: 14,
     color: '#666',
   },
   activeTabText: {
-    color: '#FF6B6B',
+    color: '#F97A5C',
     fontWeight: 'bold',
   },
   loadingContainer: {
@@ -419,7 +371,7 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   createButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#F97A5C',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,

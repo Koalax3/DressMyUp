@@ -1,0 +1,3 @@
+- Quand je dois faire un appel à une api ou une base de donnée je mets le fichier dans un fichier service.
+- Quand une partie du code peut être réutilisé ailleur je créer un component
+- L'app est déjà lancé pas besoin de proposé un 'npm run start'

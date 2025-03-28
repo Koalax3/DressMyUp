@@ -1,6 +1,8 @@
 import { supabase } from '../constants/Supabase';
 import { ClothingItem, ClothingSubType, ClothingType } from '../types';
 import { decode } from 'base64-arraybuffer';
+import { deleteClotheOutfit } from './clotheOutfitsService';
+import { fetch, FilterConstraint } from './SupabaseService';
 
 // Type pour la création de vêtement
 export type CreateClothingData = {
@@ -10,7 +12,9 @@ export type CreateClothingData = {
   brand?: string;
   color: string;
   fit?: 'slim' | 'regular' | 'loose' | 'oversize';
+  pattern?: string | null;
   image_url: string;
+  material?: string;
 };
 const TABLE_NAME = 'clothes';
 // Création d'un vêtement
@@ -27,6 +31,8 @@ export const createClothing = async (userId: string, clothingData: CreateClothin
           brand: clothingData.brand,
           color: clothingData.color,
           fit: clothingData.fit,
+          pattern: clothingData.pattern,
+          material: clothingData.material,
           image_url: clothingData.image_url,
           created_at: new Date().toISOString(),
         },
@@ -46,13 +52,16 @@ export const createClothing = async (userId: string, clothingData: CreateClothin
 };
 
 // Récupération de tous les vêtements d'un utilisateur
-export const fetchUserClothes = async (userId: string): Promise<ClothingItem[]> => {
+export const fetchUserClothes = async (userId: string, options?: FilterConstraint[]): Promise<ClothingItem[]> => {
   try {
-    const { data, error } = await supabase
-      .from(TABLE_NAME)
-      .select('*')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+    const { data, error } = await fetch(
+      TABLE_NAME,
+      [
+        ['eq', 'user_id', userId],
+        ['order', 'created_at', false],
+        ...(options || [])
+      ]
+    );
 
     if (error) {
       throw new Error(`Erreur lors de la récupération des vêtements: ${error.message}`);
@@ -74,7 +83,6 @@ export const getClothingById = async (id: string, userId: string): Promise<Cloth
       .from(TABLE_NAME)
       .select('*')
       .eq('id', id)
-      .eq('user_id', userId)
       .single();
 
     if (error) {
@@ -101,15 +109,7 @@ export const deleteClothing = async (id: string, userId: string): Promise<boolea
     }
     
     // Supprimer d'abord les relations dans clothes_outfits
-    const { error: relationsError } = await supabase
-      .from('clothes_outfits')
-      .delete()
-      .eq('clothe_id', id);
-    
-    if (relationsError) {
-      console.error('Erreur lors de la suppression des relations:', relationsError);
-      // Continue même si les relations n'ont pas pu être supprimées
-    }
+    deleteClotheOutfit(id, userId);
     
     // Supprimer le vêtement
     const { error } = await supabase
@@ -157,6 +157,8 @@ export const updateClothing = async (id: string, userId: string, clothingData: P
         brand: clothingData.brand,
         color: clothingData.color,
         fit: clothingData.fit,
+        pattern: clothingData.pattern,
+        material: clothingData.material,
         image_url: clothingData.image_url,
       })
       .eq('id', id)
@@ -187,7 +189,7 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
       
       const fileName = `${userId}/${Date.now()}.jpg`;
       const { error } = await supabase.storage
-        .from('clothes')
+        .from(TABLE_NAME)
         .upload(fileName, decode(base64Data), {
           contentType: 'image/jpeg',
           upsert: true
@@ -198,7 +200,7 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
       }
       
       const { data } = supabase.storage
-        .from('clothes')
+        .from(TABLE_NAME)
         .getPublicUrl(fileName);
       
       return data.publicUrl;
@@ -206,7 +208,7 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
     // Sinon, c'est une URI de fichier, il faut d'abord la convertir
     else {
       const response = await fetch(imageUri);
-      const blob = await response.blob();
+      const blob = await (response as any).blob();
       
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -221,7 +223,7 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
             
             const fileName = `${userId}/${Date.now()}.jpg`;
             const { error } = await supabase.storage
-              .from('clothes')
+              .from(TABLE_NAME)
               .upload(fileName, decode(base64Data), {
                 contentType: 'image/jpeg',
                 upsert: true
@@ -233,7 +235,7 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
             }
             
             const { data } = supabase.storage
-              .from('clothes')
+              .from(TABLE_NAME)
               .getPublicUrl(fileName);
             
             resolve(data.publicUrl);

@@ -1,16 +1,22 @@
 import { supabase } from '../constants/Supabase';
 import { Outfit, ClothingItem, User, Comment } from '../types';
+import { associateClothesToOutfit, deleteAllClotheOutfitByOutfitId } from './clotheOutfitsService';
 
 // Types pour les retours de données
 export type OutfitWithUser = Outfit & { 
   user: User;
   outfit_clothes: ClothingItem[];
+  isPublic?: boolean;
+  gender?: string | null;
 };
 
 export type OutfitWithDetails = Outfit & {
   user: User;
   clothes: ClothingItem[];
   comments: (Comment & { user: User })[];
+  isPublic?: boolean;
+  gender?: string | null;
+  updated_at?: string;
 };
 
 export type CreateOutfitData = {
@@ -50,31 +56,6 @@ export const createOutfit = async (
   return data;
 };
 
-// Association de vêtements à une tenue
-export const associateClothesToOutfit = async (
-  outfitId: string,
-  clothingIds: string[]
-) => {
-  if (clothingIds.length === 0) return true;
-  
-  const clothesOutfitsData = clothingIds.map(clothingId => ({
-    outfit_id: outfitId,
-    clothe_id: clothingId,
-    created_at: new Date().toISOString(),
-  }));
-
-  const { error } = await supabase
-    .from('clothes_outfits')
-    .insert(clothesOutfitsData);
-
-  if (error) {
-    console.error('Erreur lors de l\'association des vêtements:', error);
-    return false;
-  }
-
-  return true;
-};
-
 // Récupération des tenues pour l'exploration
 export const fetchOutfitsForExplore = async (userId: string, searchQuery?: string) => {
   let query = supabase
@@ -82,25 +63,50 @@ export const fetchOutfitsForExplore = async (userId: string, searchQuery?: strin
     .select(`
       *,
       user:user_id (*),
-      outfit_clothes:clothes_outfits(*, clothing:clothe_id(*))
+      likes:likes(
+        id,
+        user_id
+      ),
+      clothes:clothes_outfits(
+        id,
+        clothe_id,
+        clothe:clothe_id(*)
+      )
     `)
+    .eq('isPublic', true)
+    .neq('user_id', userId)
     .order('created_at', { ascending: false });
-
   if (searchQuery) {
     query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
   }
 
-  const { data, error } = await query;
+  return await query;
+};
 
-  if (error) {
-    throw new Error(`Erreur lors de la récupération des tenues: ${error.message}`);
+export const fetchOutfitsForWardrobe = async (userId: string, searchQuery?: string) => {
+  let query = supabase
+    .from(TABLE_NAME)
+    .select(`
+      *,
+      user:user_id (*),
+      likes:likes(
+        id,
+        user_id
+      ),
+      clothes:clothes_outfits(
+        id,
+        clothe_id,
+        clothe:clothe_id(*)
+      )
+    `)
+    .eq('isPublic', true)
+    .eq('likes.user_id', userId)
+    .order('created_at', { ascending: false });
+  if (searchQuery) {
+    query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
   }
 
-  // Transformer les données
-  return data ? data.map((outfit: any) => ({
-    ...outfit,
-    outfit_clothes: outfit.outfit_clothes.map((item: any) => item.clothing)
-  })) : [];
+  return await query;
 };
 
 // Récupération des tenues d'un utilisateur spécifique
@@ -119,13 +125,30 @@ export const fetchUserOutfits = async (userId: string) => {
 };
 
 // Récupération des détails d'une tenue spécifique
-export const fetchOutfitDetails = async (outfitId: string): Promise<OutfitWithDetails> => {
+export const fetchOutfitDetails = async (outfitId: string): Promise<Outfit> => {
   // Récupérer les détails de la tenue avec l'utilisateur
   const { data: outfitData, error: outfitError } = await supabase
     .from(TABLE_NAME)
     .select(`
       *,
-      user:user_id (*)
+      user:user_id (*),
+      likes:likes(
+        id,
+        user_id
+      ),
+      clothes:clothes_outfits(
+        id,
+        clothe_id,
+        clothe:clothe_id(*)
+      ),
+      comments:comments!comments_outfit_id_fkey(
+        id,
+        outfit_id,
+        user_id,
+        content,
+        created_at,
+        user:users(*)
+      )
     `)
     .eq('id', outfitId)
     .single();
@@ -133,41 +156,8 @@ export const fetchOutfitDetails = async (outfitId: string): Promise<OutfitWithDe
   if (outfitError) {
     throw new Error(`Erreur lors de la récupération de la tenue: ${outfitError.message}`);
   }
-
-  // Récupérer les vêtements associés via clothes_outfits
-  const { data: clothesData, error: clothesError } = await supabase
-    .from('clothes_outfits')
-    .select(`
-      clothing:clothe_id (*)
-    `)
-    .eq('outfit_id', outfitId);
-
-  if (clothesError) {
-    throw new Error(`Erreur lors de la récupération des vêtements: ${clothesError.message}`);
-  }
-
-  // Récupérer les commentaires avec les utilisateurs
-  const { data: commentsData, error: commentsError } = await supabase
-    .from('comments')
-    .select(`
-      *,
-      user:users!comments_user_id_fkey(*)
-    `)
-    .eq('outfit_id', outfitId)
-    .order('created_at', { ascending: false });
-
-  if (commentsError) {
-    throw new Error(`Erreur lors de la récupération des commentaires: ${commentsError.message}`);
-  }
-
-  // Formater les données
-  const clothes = clothesData ? clothesData.map(item => item.clothing) : [];
   
-  return {
-    ...outfitData,
-    clothes,
-    comments: commentsData || [],
-  };
+  return outfitData;
 };
 
 // Like / Unlike une tenue
@@ -236,6 +226,18 @@ export const checkIfLiked = async (userId: string, outfitId: string) => {
   }
 
   return !!data;
+};
+
+export const counterLikes = async (outfitId: string) => {
+  const { count, error } = await supabase
+      .from('likes')
+      .select('*', { count: 'exact' })
+      .eq('outfit_id', outfitId);
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(`Erreur lors de la vérification du like: ${error.message}`);
+  }
+  return count;
 };
 
 // Ajouter un commentaire à une tenue
@@ -314,7 +316,7 @@ export const deleteOutfit = async (outfitId: string, userId: string) => {
 
     // Supprimer la tenue
     const log = await supabase
-      .from('outfits')
+      .from(TABLE_NAME)
       .delete()
       .eq('id', outfitId);
     console.log(log);
@@ -329,7 +331,7 @@ export const deleteOutfit = async (outfitId: string, userId: string) => {
       if (imagePath) {
         const { error: storageError } = await supabase
           .storage
-          .from('outfits')
+          .from(TABLE_NAME)
           .remove([imagePath]);
 
         if (storageError) {
@@ -342,5 +344,49 @@ export const deleteOutfit = async (outfitId: string, userId: string) => {
     return true;
   } catch (error) {
     throw error;
+  }
+};
+
+/**
+ * Met à jour une tenue existante
+ */
+export const updateOutfit = async (id: string, updateData: Partial<{
+  name: string;
+  description: string;
+  isPublic: boolean;
+  gender: string;
+  season: string;
+  occasion: string;
+}>): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from(TABLE_NAME)
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(`Erreur lors de la mise à jour de la tenue: ${error.message}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur:', error);
+    return false;
+  }
+};
+
+/**
+ * Met à jour les vêtements associés à une tenue
+ * Cette fonction supprime toutes les associations existantes et en crée de nouvelles
+ */
+export const updateOutfitClothes = async (outfitId: string, clothingIds: string[]): Promise<boolean> => {
+  try {
+    // 1. Supprimer toutes les associations existantes
+    await deleteAllClotheOutfitByOutfitId(outfitId);
+
+    return await associateClothesToOutfit(outfitId, clothingIds);
+  } catch (error) {
+    console.error('Erreur:', error);
+    return false;
   }
 }; 

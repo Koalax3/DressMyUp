@@ -104,7 +104,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
             </View>
           ) : (
             <TouchableOpacity style={styles.removeImageButton} onPress={onImageRemoved}>
-              <Ionicons name="close-circle" size={28} color="#FF6B6B" />
+              <Ionicons name="close-circle" size={28} color="#F97A5C" />
             </TouchableOpacity>
           )}
         </View>
@@ -145,7 +145,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
     borderRadius: 15,
     padding: 5,
   },

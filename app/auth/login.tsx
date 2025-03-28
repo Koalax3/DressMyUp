@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, TextInput, TouchableOpacity, Text, Image, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TouchableOpacity, Text, Image, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { ColorsTheme } from '@/constants/Colors';
+import TextInput from '@/components/TextInput';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -43,20 +45,20 @@ export default function LoginScreen() {
 
       <View style={styles.formContainer}>
         <TextInput
-          style={styles.input}
           placeholder="Email"
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
+          placeholderTextColor={ColorsTheme.text.main}
         />
         
         <TextInput
-          style={styles.input}
           placeholder="Mot de passe"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          placeholderTextColor={ColorsTheme.text.main}
         />
 
         <TouchableOpacity 
@@ -65,7 +67,7 @@ export default function LoginScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={ColorsTheme.white} />
           ) : (
             <Text style={styles.buttonText}>Se connecter</Text>
           )}
@@ -85,7 +87,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: ColorsTheme.white,
     padding: 20,
   },
   logoContainer: {
@@ -97,36 +99,38 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     marginBottom: 10,
+    borderRadius: 25,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
+    color: ColorsTheme.text.main,
   },
   subtitle: {
     fontSize: 16,
-    color: '#666',
+    color: ColorsTheme.text.bright,
     marginTop: 5,
   },
   formContainer: {
     width: '100%',
   },
   input: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: ColorsTheme.gray,
+    color: ColorsTheme.text.main,
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: ColorsTheme.primary.main,
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
     marginTop: 10,
   },
   buttonText: {
-    color: '#fff',
+    color: ColorsTheme.white,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -136,11 +140,11 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   footerText: {
-    color: '#666',
+    color: ColorsTheme.text.bright,
     marginRight: 5,
   },
   link: {
-    color: '#FF6B6B',
+    color: ColorsTheme.primary.main,
     fontWeight: 'bold',
   },
 }); 

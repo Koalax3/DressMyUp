@@ -12,3 +12,9 @@ export const seasons: { [key: string]: string } = {
   'winter': 'Hiver',
   'all': 'Toutes les saisons'
 };
+
+export const genders: { [key: string]: string } = {
+  'male': 'Homme',
+  'female': 'Femme',
+  'unisex': 'Unisexe'
+};

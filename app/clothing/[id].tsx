@@ -9,6 +9,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { getClothingById, deleteClothing } from '../../services/clothingService';
 import { subtypesByType, types } from '@/constants/Clothes';
 import { fits } from '@/constants/Clothes';
+import { COLORS, PATTERNS, BRANDS } from '@/constants/Clothes';
+import ColorDot from '@/components/ColorDot';
+import { MATERIALS } from '@/constants/Materials';
+import MatchingClothesSection from '@/components/MatchingClothesSection';
+import { ColorsTheme } from '@/constants/Colors';
 
 export default function ClothingDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -102,7 +107,7 @@ export default function ClothingDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6B6B" />
+        <ActivityIndicator size="large" color="#F97A5C" />
       </SafeAreaView>
     );
   }
@@ -123,14 +128,14 @@ export default function ClothingDetailScreen() {
       <ScrollView>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color={ColorsTheme.text.main} />
           </TouchableOpacity>
           <View style={styles.headerActions}>
             <TouchableOpacity onPress={shareClothing} style={styles.actionButton}>
-              <Ionicons name="share-outline" size={24} color="#333" />
+              <Ionicons name="share-outline" size={24} color={ColorsTheme.secondary.dark} />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
-              <Ionicons name="trash-outline" size={24} color="#FF6B6B" />
+              <Ionicons name="trash-outline" size={24} color={ColorsTheme.primary.main} />
             </TouchableOpacity>
           </View>
         </View>
@@ -161,10 +166,22 @@ export default function ClothingDetailScreen() {
             <View style={styles.detailItem}>
               <Text style={styles.detailLabel}>Couleur</Text>
               <View style={styles.colorContainer}>
-                <View style={[styles.colorCircle, { backgroundColor: clothingItem.color }]} />
-                <Text style={styles.detailValue}>{clothingItem.color}</Text>
+                <ColorDot colorValue={COLORS.find(c => c.id === clothingItem.color)?.value || clothingItem.color} />
+                <Text style={styles.detailValue}>{COLORS.find(c => c.id === clothingItem.color)?.name || clothingItem.color}</Text>
               </View>
             </View>
+            
+            <View style={styles.detailItem}>
+              <Text style={styles.detailLabel}>Motif</Text>
+              <Text style={styles.detailValue}>{PATTERNS[clothingItem.pattern as keyof typeof PATTERNS] || PATTERNS['plain']}</Text>
+            </View>
+            
+            {clothingItem.material && (
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Matériau</Text>
+                <Text style={styles.detailValue}>{MATERIALS[clothingItem.material] || clothingItem.material}</Text>
+              </View>
+            )}
 
             {clothingItem.fit && (
               <View style={styles.detailItem}>
@@ -172,9 +189,10 @@ export default function ClothingDetailScreen() {
                 <Text style={styles.detailValue}>{getFitLabel(clothingItem.fit)}</Text>
               </View>
             )}
+
           </View>
 
-          <View style={styles.actionsContainer}>
+          {user && user.id === clothingItem.user_id && <View style={styles.actionsContainer}>
             <TouchableOpacity 
               style={styles.editButton}
               onPress={() => router.push({
@@ -196,7 +214,10 @@ export default function ClothingDetailScreen() {
               <Ionicons name="shirt-outline" size={20} color="#fff" />
               <Text style={styles.outfitButtonText}>Créer une tenue</Text>
             </TouchableOpacity>
-          </View>
+          </View>}
+
+          <MatchingClothesSection currentItem={clothingItem} />
+
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -206,24 +227,24 @@ export default function ClothingDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: ColorsTheme.white,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: ColorsTheme.white,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: ColorsTheme.white,
     padding: 20,
   },
   errorText: {
     fontSize: 18,
-    color: '#666',
+    color: ColorsTheme.text.bright,
     marginBottom: 20,
   },
   header: {
@@ -249,9 +270,10 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '90%',
-    height: 350,
+    height: 500,
+    objectFit: 'contain',
     borderRadius: 15,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: ColorsTheme.white,
   },
   infoContainer: {
     padding: 20,
@@ -259,12 +281,12 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
+    color: ColorsTheme.text.main,
     marginBottom: 5,
   },
   brand: {
     fontSize: 16,
-    color: '#666',
+    color: ColorsTheme.text.bright,
     marginBottom: 20,
   },
   detailsContainer: {
@@ -279,12 +301,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 16,
-    color: '#666',
+    color: ColorsTheme.text.bright,
   },
   detailValue: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
+    color: ColorsTheme.text.main,
   },
   colorContainer: {
     flexDirection: 'row',
@@ -306,7 +328,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#F97A5C',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 15,
@@ -322,7 +344,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#6b90ff',
+    backgroundColor: ColorsTheme.secondary.main,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 15,
@@ -335,7 +357,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
   },
   button: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: ColorsTheme.primary.main,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -344,5 +366,39 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  metadataContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+  },
+  metadataItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  metadataIcon: {
+    marginRight: 10,
+  },
+  metadataText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333',
+  },
+  matchButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    marginTop: 20,
+  },
+  matchButtonText: {
+    color: '#555',
+    fontWeight: '500',
+  },
+  matchButtonIcon: {
+    marginRight: 10,
   },
 }); 
