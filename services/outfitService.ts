@@ -1,6 +1,7 @@
 import { supabase } from '../constants/Supabase';
 import { Outfit, ClothingItem, User, Comment } from '../types';
 import { associateClothesToOutfit, deleteAllClotheOutfitByOutfitId } from './clotheOutfitsService';
+import { applyFilter, FilterConstraint } from './supabaseService';
 
 // Types pour les retours de données
 export type OutfitWithUser = Outfit & { 
@@ -57,7 +58,10 @@ export const createOutfit = async (
 };
 
 // Récupération des tenues pour l'exploration
-export const fetchOutfitsForExplore = async (userId: string, searchQuery?: string) => {
+export const fetchOutfitsForExplore = async (userId: string, page: number = 1, itemsPerPage: number = 10, options: FilterConstraint[] = []) => {
+  const start = (page - 1) * itemsPerPage;
+  const end = start + itemsPerPage - 1;
+
   let query = supabase
     .from(TABLE_NAME)
     .select(`
@@ -75,16 +79,55 @@ export const fetchOutfitsForExplore = async (userId: string, searchQuery?: strin
     `)
     .eq('isPublic', true)
     .neq('user_id', userId)
-    .order('created_at', { ascending: false });
-  if (searchQuery) {
-    query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+    .order('created_at', { ascending: false })
+    .range(start, end);
+  if (options.length > 0) {
+    for (const [operator, field, value] of options) {
+      query = applyFilter(query, operator, field, value);
+    }
   }
 
   return await query;
 };
 
 export const fetchOutfitsForWardrobe = async (userId: string, searchQuery?: string) => {
-  let query = supabase
+  try {
+
+    // Construire la requête pour récupérer les tenues que l'on possède
+    let query = supabase
+      .from(TABLE_NAME)
+      .select(`
+        *,
+        user:user_id (*),
+        likes:likes(
+          id,
+          user_id
+        ),
+        clothes:clothes_outfits(
+          id,
+          clothe_id,
+          clothe:clothe_id(*)
+        )
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    // Ajouter une recherche textuelle si un terme de recherche est fourni
+    if (searchQuery && searchQuery.trim() !== '') {
+      query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
+    }
+
+    // Exécuter la requête
+    return await query;
+  } catch (error) {
+    console.error('Erreur dans fetchOutfitsForWardrobe:', error);
+    throw error;
+  }
+};
+
+// Récupération des tenues d'un utilisateur spécifique
+export const fetchUserOutfits = async (userId: string) => {
+  const { data, error } = await supabase
     .from(TABLE_NAME)
     .select(`
       *,
@@ -92,28 +135,8 @@ export const fetchOutfitsForWardrobe = async (userId: string, searchQuery?: stri
       likes:likes(
         id,
         user_id
-      ),
-      clothes:clothes_outfits(
-        id,
-        clothe_id,
-        clothe:clothe_id(*)
       )
     `)
-    .eq('isPublic', true)
-    .eq('likes.user_id', userId)
-    .order('created_at', { ascending: false });
-  if (searchQuery) {
-    query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
-  }
-
-  return await query;
-};
-
-// Récupération des tenues d'un utilisateur spécifique
-export const fetchUserOutfits = async (userId: string) => {
-  const { data, error } = await supabase
-    .from(TABLE_NAME)
-    .select('*')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
@@ -319,7 +342,6 @@ export const deleteOutfit = async (outfitId: string, userId: string) => {
       .from(TABLE_NAME)
       .delete()
       .eq('id', outfitId);
-    console.log(log);
     if (log.error) {
       throw new Error(`Erreur lors de la suppression de la tenue: ${log.error.message}`);
     }
@@ -389,4 +411,60 @@ export const updateOutfitClothes = async (outfitId: string, clothingIds: string[
     console.error('Erreur:', error);
     return false;
   }
+};
+
+/**
+ * Supprimer un commentaire
+ * Un utilisateur ne peut supprimer que ses propres commentaires
+ */
+export const deleteComment = async (commentId: string, userId: string): Promise<boolean> => {
+  try {
+    // Vérifier d'abord que le commentaire appartient à l'utilisateur
+    const { data: comment, error: checkError } = await supabase
+      .from('comments')
+      .select('*')
+      .eq('id', commentId)
+      .eq('user_id', userId)
+      .single();
+
+    if (checkError) {
+      console.error('Erreur lors de la vérification du commentaire:', checkError);
+      return false;
+    }
+
+    if (!comment) {
+      return false; // Le commentaire n'appartient pas à l'utilisateur
+    }
+
+    // Supprimer le commentaire
+    const { error } = await supabase
+      .from('comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      console.error('Erreur lors de la suppression du commentaire:', error);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Erreur lors de la suppression du commentaire:', error);
+    return false;
+  }
+};
+
+// Récupération des IDs des tenues likées par un utilisateur
+export const fetchLikedOutfitIds = async (userId: string) => {
+  const { data, error } = await supabase
+    .from('likes')
+    .select('outfit_id')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Erreur lors de la récupération des likes:', error);
+    return [];
+  }
+
+  return data?.map(like => like.outfit_id) || [];
 }; 

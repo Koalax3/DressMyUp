@@ -24,7 +24,7 @@ const OutfitPreview = ({ outfit, userWardrobe = [] }: OutfitPreviewProps) => {
   const [matchingPercentage, setMatchingPercentage] = useState(0);
 
   useEffect(() => {
-    if(outfit.likes) {
+    if(outfit.likes?.length && outfit.likes.find((like) => like.user_id === user?.id)) {
       setIsLiked(true);
     }
     if (userWardrobe.length > 0) {
@@ -35,12 +35,13 @@ const OutfitPreview = ({ outfit, userWardrobe = [] }: OutfitPreviewProps) => {
 
   const onLike = async () => {
       if (!user) return;
+      setIsLiked(!isLiked);
       try {
         // Vérifier si l'utilisateur a déjà aimé cette tenue
         await likeOutfit(outfit.id, user.id);
-        setIsLiked(!isLiked);
       } catch (error) {
         console.error('Erreur:', error);
+        setIsLiked(!isLiked);
       }
   }
 
@@ -76,13 +77,20 @@ const OutfitPreview = ({ outfit, userWardrobe = [] }: OutfitPreviewProps) => {
       
       <TouchableOpacity 
         style={styles.userInfo}
-        onPress={() => router.push({
-          pathname: '/(tabs)/profile',
-          params: { userId: outfit.user.id }
-        })}
+        onPress={() => {
+          // Si c'est l'utilisateur actuel, aller à l'onglet profil, sinon aller à la page de profil dédiée
+          if (user?.id === outfit.user?.id) {
+            router.push('/(tabs)/profile');
+          } else {
+            router.push({
+              pathname: '/profile/[id]',
+              params: { id: outfit.user?.id }
+            });
+          }
+        }}
       >
         <Image 
-          source={{ uri: outfit.user.avatar_url }} 
+          source={{ uri: outfit.user?.avatar_url || 'https://via.placeholder.com/32' }} 
           style={styles.avatar}
         />
       </TouchableOpacity>

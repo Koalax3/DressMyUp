@@ -1,0 +1,68 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Modèles de composants DressMyUp
+
+L'application utilise plusieurs modèles de conception pour ses composants React Native.
+
+## Modales
+
+Les modales sont implémentées comme des composants réutilisables, par exemple [components/EmptyWardrobeModal.tsx](mdc:components/EmptyWardrobeModal.tsx) :
+
+```typescript
+type EmptyWardrobeModalProps = {
+  visible: boolean;
+  onClose: () => void;
+  closeable?: boolean;
+};
+
+const EmptyWardrobeModal = ({ visible, onClose, closeable = false }: EmptyWardrobeModalProps) => {
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      {/* Contenu de la modale */}
+    </Modal>
+  );
+};
+```
+
+Caractéristiques :
+- Utilisation de `visible` pour contrôler l'affichage
+- Fonction `onClose` pour la fermeture
+- Options flexibles comme `closeable` pour personnaliser le comportement
+
+## Contextes
+
+L'application utilise le modèle de contexte React pour partager l'état global :
+
+1. [contexts/AuthContext.tsx](mdc:contexts/AuthContext.tsx) - Gestion de l'authentification
+2. [contexts/ClothingContext.tsx](mdc:contexts/ClothingContext.tsx) - Gestion des vêtements
+
+## Composants de sélection
+
+Les composants de sélection comme les pickers suivent un modèle consistant :
+- État local pour la sélection
+- Modale pour afficher les options
+- Fonction de callback pour communiquer la sélection
+
+## Style des composants
+
+- Utilisation de `StyleSheet.create` pour définir les styles
+- Styles consistants pour les boutons, entrées et conteneurs
+- Thème de couleurs centralisé via `ColorsTheme`
+
+## Bonnes pratiques
+
+1. Extraction des composants réutilisables dans des fichiers séparés
+2. Utilisation de types TypeScript pour les props
+3. Valeurs par défaut pour les props optionnelles
+4. Séparation claire entre la logique et la présentation
+5. Utiliser le component Header.tsx pour les hauts de page
+6. Les appels à la db doivent être faites dans un fichier services.
+7. Suivre le principe DRY (Don't Repeat Yourself)

@@ -1,0 +1,59 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Gestion des erreurs et timeouts
+
+L'application DressMyUp implémente plusieurs mécanismes pour gérer les erreurs et éviter les blocages.
+
+## Fonction de timeout
+
+La fonction utilitaire `withTimeout` dans [contexts/AuthContext.tsx](mdc:contexts/AuthContext.tsx) permet d'ajouter un délai maximum à toute promesse :
+
+```typescript
+const withTimeout = <T,>(promise: Promise<T> | { then: (onfulfilled: (value: T) => any) => any }, ms: number): Promise<T> => {
+  let timeout: NodeJS.Timeout;
+  
+  const timeoutPromise = new Promise<T>((_, reject) => {
+    timeout = setTimeout(() => {
+      reject(new Error(`La requête a expiré après ${ms}ms`));
+    }, ms);
+  });
+  
+  return Promise.race([
+    Promise.resolve(promise), // Force la conversion en Promise
+    timeoutPromise
+  ]).finally(() => clearTimeout(timeout));
+};
+```
+
+## Utilisation dans les requêtes Supabase
+
+Cette fonction est utilisée pour éviter les blocages lors des requêtes à la base de données :
+
+```typescript
+const response = await withTimeout(
+  supabase
+    .from('users')
+    .select('*')
+    .eq('id', userId)
+    .single(),
+  5000 // Timeout de 5 secondes
+);
+```
+
+## Bonnes pratiques de gestion d'erreurs
+
+1. Toutes les opérations asynchrones sont encapsulées dans des blocs try/catch
+2. Les erreurs sont journalisées dans la console avec `console.error`
+3. Les utilisateurs sont informés des erreurs via des alertes lorsque nécessaire
+4. L'état `loading` est correctement géré même en cas d'erreur (dans le bloc `finally`)
+
+## Cycle de vie des composants
+
+Pour éviter les fuites de mémoire et les mises à jour d'état sur des composants démontés :
+
+1. Utilisation d'un drapeau `isMounted` pour suivre l'état de montage du composant
+2. Annulation des abonnements dans la fonction de nettoyage du `useEffect`
+3. Vérification que le composant est toujours monté avant de mettre à jour l'état

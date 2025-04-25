@@ -5,9 +5,14 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { useColorScheme } from 'react-native';
-import { AuthProvider } from '../contexts/AuthContext';
+import { AuthProvider } from '@/contexts/AuthContext';
 import { ScrollProvider } from '../contexts/ScrollContext';
 import { FilterProvider } from '../contexts/FilterContext';
+import { ClothingProvider } from '@/contexts/ClothingContext';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Toast from 'react-native-toast-message';
+import toastConfig from '../components/toastConfig';
+import { ThemeProvider as CustomThemeProvider } from '@/contexts/ThemeContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -42,7 +47,6 @@ export default function RootLayout() {
   if (!loaded) {
     return null;
   }
-
   return <RootLayoutNav />;
 }
 
@@ -51,16 +55,23 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <ScrollProvider>
-          <FilterProvider>
-            <Stack screenOptions={{ headerShown: false }}>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="auth" options={{ headerShown: false }} />
-            </Stack>
-          </FilterProvider>
-        </ScrollProvider>
-      </AuthProvider>
+      <CustomThemeProvider>
+        <AuthProvider>
+          <ClothingProvider>
+            <ScrollProvider>
+              <FilterProvider>
+                <GestureHandlerRootView style={{ flex: 1 }}>
+                  <Stack screenOptions={{ headerShown: false }}>
+                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                    <Stack.Screen name="auth" options={{ headerShown: false }} />
+                  </Stack>
+                  <Toast config={toastConfig} />
+                </GestureHandlerRootView>
+              </FilterProvider>
+            </ScrollProvider>
+          </ClothingProvider>
+        </AuthProvider>
+      </CustomThemeProvider>
     </ThemeProvider>
   );
 } 

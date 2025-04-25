@@ -25,7 +25,7 @@ export default function LoginScreen() {
     if (error) {
       Alert.alert('Erreur de connexion', error.message);
     } else {
-      router.replace('/(tabs)');
+      router.replace('/(tabs)' as any);
     }
   };
 
@@ -39,7 +39,7 @@ export default function LoginScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>DressMeUp</Text>
+        <Text style={styles.title}>DressMatch</Text>
         <Text style={styles.subtitle}>Votre garde-robe virtuelle</Text>
       </View>
 
@@ -67,7 +67,7 @@ export default function LoginScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color={ColorsTheme.white} />
+            <ActivityIndicator color={ColorsTheme.background.main} />
           ) : (
             <Text style={styles.buttonText}>Se connecter</Text>
           )}
@@ -87,7 +87,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ColorsTheme.white,
+    backgroundColor: ColorsTheme.background.main,
     padding: 20,
   },
   logoContainer: {
@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: {
-    color: ColorsTheme.white,
+    color: ColorsTheme.background.main,
     fontSize: 16,
     fontWeight: 'bold',
   },

@@ -1,0 +1,36 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Système d'authentification DressMyUp
+
+Le système d'authentification de l'application est géré par le contexte AuthContext défini dans [contexts/AuthContext.tsx](mdc:contexts/AuthContext.tsx).
+
+## Points clés
+
+- L'authentification utilise Supabase Auth
+- Les données utilisateur sont stockées dans la table `users` de la base de données
+- Un mécanisme de timeout est implémenté pour éviter les blocages lors des requêtes à la base de données
+- Le contexte gère le cycle de vie complet de l'authentification (inscription, connexion, déconnexion)
+
+## Flux d'authentification
+
+1. Au chargement initial, l'application vérifie la session existante via `supabase.auth.getSession()`
+2. Pour chaque changement d'état d'authentification, le hook `onAuthStateChange` est déclenché
+3. Lors de la connexion, les données utilisateur sont récupérées depuis la table `users`
+4. Si l'utilisateur n'existe pas dans la table, un nouveau profil est créé automatiquement
+
+## Gestion des erreurs
+
+- Toutes les requêtes à la base de données ont un timeout pour éviter les blocages
+- Les erreurs de réseau sont capturées et affichées à l'utilisateur
+- Si la création du profil échoue à cause d'une contrainte d'unicité, l'application tente de récupérer le profil existant
+
+## Méthodes principales
+
+- `signUp`: Inscription d'un nouvel utilisateur
+- `signIn`: Connexion d'un utilisateur existant
+- `signOut`: Déconnexion de l'utilisateur
+- `updateProfile`: Mise à jour des informations utilisateur
+

@@ -8,13 +8,18 @@ import { OutfitService } from '../../services';
 import { counterLikes, updateOutfit } from '@/services/outfitService';
 import ClotheView from '@/components/ClotheView';
 import PublicSwitch from '@/components/PublicSwitch';
-import GenderSelector from '@/components/GenderSelector';
-import { genders } from '@/constants/Outfits';
+import { genders, occasions, seasons } from '@/constants/Outfits';
 import { Outfit, User, ClothingItem, Comment } from '@/types';
 import { ColorsTheme } from '@/constants/Colors';
 import MatchingProgressBar from '@/components/MatchingProgressBar';
 import { calculateMatchingPercentage } from '@/services/matchingService';
 import { supabase } from '@/constants/Supabase';
+import CommentsSection from '@/components/CommentsSection';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { DEFAULT_USER_AVATAR } from '@/constants/Users';
+import Header from '@/components/Header';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
 
 // Définir le type localement pour correspondre exactement à ce que nous utilisons
 interface OutfitWithDetails extends Outfit {
@@ -33,13 +38,12 @@ export default function OutfitDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
   const [likesCount, setLikesCount] = useState<number>(0);
-  const [commentText, setCommentText] = useState('');
-  const [commenting, setCommenting] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [matchingPercentage, setMatchingPercentage] = useState(0);
   const [userWardrobe, setUserWardrobe] = useState<ClothingItem[]>([]);
-  const commentInputRef = useRef<TextInput>(null);
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
 
   useEffect(() => {
     if (id) {
@@ -144,33 +148,6 @@ export default function OutfitDetailScreen() {
     }
   };
 
-  const addComment = async () => {
-    if (!user || !id || !outfit || !commentText.trim()) return;
-
-    setCommenting(true);
-
-    try {
-      const newComment = await OutfitService.addCommentToOutfit(
-        user.id,
-        id as string,
-        commentText.trim()
-      );
-
-      if (newComment) {
-        setOutfit({
-          ...outfit,
-          comments: [newComment, ...outfit.comments],
-        });
-        setCommentText('');
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Impossible d\'ajouter le commentaire');
-    } finally {
-      setCommenting(false);
-    }
-  };
-
   const handleDelete = () => {
     if (!user || !outfit) return;
 
@@ -249,20 +226,40 @@ export default function OutfitDetailScreen() {
     }
   }, [outfit, userWardrobe]);
 
+  // Ajouter un commentaire
+  const handleCommentAdded = (newComment: Comment & { user: User }) => {
+    if (!outfit) return;
+    
+    setOutfit({
+      ...outfit,
+      comments: [newComment, ...outfit.comments],
+    });
+  };
+
+  // Supprimer un commentaire
+  const handleCommentDeleted = (commentId: string) => {
+    if (!outfit) return;
+    
+    setOutfit({
+      ...outfit,
+      comments: outfit.comments.filter(comment => comment.id !== commentId),
+    });
+  };
+
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#F97A5C" />
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.background.main }]}>
+        <ActivityIndicator size="large" color={colors.primary.main} />
       </SafeAreaView>
     );
   }
 
   if (!outfit) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
-        <Text style={styles.errorText}>Tenue introuvable</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-          <Text style={styles.buttonText}>Retour</Text>
+      <SafeAreaView style={[styles.errorContainer, { backgroundColor: colors.background.main }]}>
+        <Text style={[styles.errorText, { color: colors.text.main }]}>Tenue introuvable</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary.main }]} onPress={() => router.back()}>
+          <Text style={[styles.buttonText, { color: colors.text.bright }]}>Retour</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -271,207 +268,163 @@ export default function OutfitDetailScreen() {
   const isOwner = user && user.id === outfit.user_id;
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.title}>{outfit.name}</Text>
-          <View >
-          <TouchableOpacity onPress={shareOutfit} style={styles.actionButton}>
-              <Ionicons name="share-outline" size={24} color={ColorsTheme.secondary.dark} />
-            </TouchableOpacity>
-          {isOwner && (
-            <TouchableOpacity onPress={handleDelete} disabled={deleting}>
-              {deleting ? (
-                <ActivityIndicator size="small" color="#F97A5C" />
-              ) : (
-                <Ionicons name="trash-outline" size={24} color="#F97A5C" />
-              )}
-            </TouchableOpacity>
-          )}
-          </View>
-        </View>
-
-        <View style={styles.userInfo}>
-          <TouchableOpacity 
-            style={styles.userContainer}
-            onPress={() => router.push({
-              pathname: '/(tabs)/profile',
-              params: { userId: outfit.user.id }
-            })}
-          >
-            <Image 
-              source={{ uri: outfit.user.avatar_url || 'https://via.placeholder.com/50' }} 
-              style={styles.avatar}
-            />
-            <Text style={styles.username}>{outfit.user.username}</Text>
-          </TouchableOpacity>
-          <Text style={styles.date}>{formatDate(outfit.created_at)}</Text>
-        </View>
-
-        {outfit.image_url && (
-          <View style={styles.outfitImageContainer}>
-            <Image 
-              source={{ uri: outfit.image_url }} 
-              style={styles.outfitImage}
-              resizeMode="cover"
-            />
-          </View>
-        )}
-
-        {outfit.description && (
-          <Text style={styles.description}>{outfit.description}</Text>
-        )}
-        
-        <View style={styles.metadataContainer}>
-          {outfit.season && (
-            <View style={styles.metadataItem}>
-              <Ionicons name="sunny-outline" size={20} color={ColorsTheme.primary.main} style={styles.metadataIcon} />
-              <Text style={styles.metadataText}>
-                {outfit.season === 'summer' ? 'Été' : 
-                 outfit.season === 'winter' ? 'Hiver' : 
-                 outfit.season === 'spring' ? 'Printemps' : 
-                 outfit.season === 'fall' ? 'Automne' : outfit.season}
-              </Text>
-            </View>
-          )}
-          
-          {outfit.occasion && (
-            <View style={styles.metadataItem}>
-              <Ionicons name="calendar-outline" size={20} color={ColorsTheme.primary.main} style={styles.metadataIcon} />
-              <Text style={styles.metadataText}>
-                {outfit.occasion === 'casual' ? 'Casual' :
-                 outfit.occasion === 'formal' ? 'Formel' :
-                 outfit.occasion === 'sport' ? 'Sport' :
-                 outfit.occasion === 'work' ? 'Travail' :
-                 outfit.occasion === 'party' ? 'Soirée' : outfit.occasion}
-              </Text>
-            </View>
-          )}
-          
-          {outfit.gender && (
-            <View style={styles.metadataItem}>
-              <Ionicons 
-                name={
-                  outfit.gender === 'male' ? 'male-outline' :
-                  outfit.gender === 'female' ? 'female-outline' :
-                  'people-outline'
-                } 
-                size={20} 
-                color={ColorsTheme.primary.main} 
-                style={styles.metadataIcon} 
-              />
-              <Text style={styles.metadataText}>
-                {genders[outfit.gender] || outfit.gender}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Paramètres de l'outfit (uniquement pour le propriétaire) */}
-        {isOwner && (
-          <View style={styles.settingsContainer}>
-            <View style={styles.settingSeparator} />
-            
-            {isUpdating ? (
-              <View style={styles.loadingIndicator}>
-                <ActivityIndicator size="small" color="#F97A5C" />
-                <Text style={styles.loadingText}>Mise à jour...</Text>
-              </View>
-            ) : (
-              <>
-                <PublicSwitch 
-                  isPublic={outfit.isPublic !== false} 
-                  onToggle={handlePublicToggle}
-                  disabled={isUpdating}
-                />
-              </>
-            )}
-
-            <View style={styles.settingSeparator} />
-          </View>
-        )}
-
-        <View style={styles.clothesContainer}>
-          <Text style={styles.sectionTitle}>Vêtements</Text>
-          {userWardrobe.length > 0 && (
-            <View style={styles.matchingSection}>
-              <MatchingProgressBar percentage={matchingPercentage} />
-            </View>
-          )}
-          {outfit.clothes.map((clothingItem : ClothingItem) => (
-            <ClotheView key={clothingItem.id} clothingItem={clothingItem.clothe!} userWardrobeItems={userWardrobe} showMatchStatus />
-          ))}
-        </View>
-
-        <View style={styles.actionsContainer}>
-          <TouchableOpacity 
-            style={styles.actionButton}
-            onPress={handleLike}
-          >
-            <Ionicons 
-              name={liked ? "heart" : "heart-outline"} 
-              size={28} 
-              color={liked ? "#F97A5C" : "#333"} 
-            />
-            <Text style={styles.actionText}>{likesCount}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton} onPress={() => commentInputRef.current?.focus()}>
-            <Ionicons name="chatbubble-outline" size={24} color="#333" />
-            <Text style={styles.actionText}>{outfit.comments.length}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.commentsSection}>
-          <Text style={styles.sectionTitle}>Commentaires</Text>
-          
-          {user && (
-            <View style={styles.commentForm}>
-              <TextInput
-                ref={commentInputRef}
-                style={styles.commentInput}
-                placeholder="Ajouter un commentaire..."
-                value={commentText}
-                onChangeText={setCommentText}
-                multiline
-              />
-              <TouchableOpacity 
-                style={styles.commentButton} 
-                onPress={addComment}
-                disabled={!commentText.trim() || commenting}
-              >
-                {commenting ? (
-                  <ActivityIndicator size="small" color="#fff" />
-                ) : (
-                  <Text style={styles.commentButtonText}>Envoyer</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <ScrollView>
+          <Header title={outfit.name} back >
+          <View style={{flexDirection: 'row', gap: 15}}>
+            {outfit.isPublic && <TouchableOpacity onPress={shareOutfit}>
+                <Ionicons name="share-outline" size={28} color={isDarkMode ? colors.white : colors.secondary.dark} />
+              </TouchableOpacity>}
+              {isOwner && (
+              <TouchableOpacity onPress={handleEdit}>
+                {(
+                  <Ionicons name="create-outline" size={28} color={isDarkMode ? colors.white : colors.secondary.dark} />
                 )}
               </TouchableOpacity>
+            )}
+            {isOwner && (
+              <TouchableOpacity onPress={handleDelete} disabled={deleting}>
+                {deleting ? (
+                  <ActivityIndicator size="small" color={colors.primary.main} />
+                ) : (
+                  <Ionicons name="trash-outline" size={28} color={colors.primary.main} />
+                )}
+              </TouchableOpacity>
+            )}
+            </View>
+          </Header>
+
+          {outfit.image_url && (
+            <View style={styles.outfitImageContainer}>
+              <Image 
+                source={{ uri: outfit.image_url }} 
+                style={styles.outfitImage}
+                resizeMode="cover"
+              />
             </View>
           )}
 
-          {outfit.comments.length === 0 ? (
-            <Text style={styles.noComments}>Aucun commentaire pour le moment.</Text>
-          ) : (
-            outfit.comments.map((comment) => (
-              <View key={comment.id} style={styles.comment}>
-                <View style={styles.commentHeader}>
-                  <View style={styles.commentUser}>
-                    <Image 
-                      source={{ uri: comment.user.avatar_url }} 
-                      style={styles.commentAvatar} 
-                    />
-                    <Text style={styles.commentUsername}>{comment.user.username}</Text>
-                  </View>
-                  <Text style={styles.commentDate}>{formatDate(comment.created_at)}</Text>
-                </View>
-                <Text style={styles.commentContent}>{comment.content}</Text>
+          <View style={[styles.userInfo, { borderBottomColor: colors.text.lighter }]}>
+            <TouchableOpacity 
+              style={styles.userContainer}
+              onPress={() => router.push({
+                pathname: '/profile/[id]',
+                params: { id: outfit.user.id }
+              })}
+            >
+              <Image 
+                source={{ uri: outfit.user.avatar_url || DEFAULT_USER_AVATAR }} 
+                style={styles.avatar}
+              />
+              <Text style={[styles.username, { color: colors.text.main }]}>{outfit.user.username}</Text>
+            </TouchableOpacity>
+            <Text style={[styles.date, { color: colors.text.light }]}>{formatDate(outfit.created_at)}</Text>
+          </View>
+          
+          <View style={styles.metadataContainer}>
+            {outfit.season && (
+              <View style={[styles.metadataItem, { backgroundColor: colors.background.deep }]}>
+                <Ionicons name="sunny-outline" size={18} color={colors.primary.main} style={styles.metadataIcon} />
+                <Text style={[styles.metadataText, { color: colors.text.main }]}>
+                  {seasons[outfit.season]}
+                </Text>
               </View>
-            ))
+            )}
+            
+            {outfit.occasion && (
+              <View style={[styles.metadataItem, { backgroundColor: colors.background.deep }]}>
+                <Ionicons name="calendar-outline" size={18} color={colors.primary.main} style={styles.metadataIcon} />
+                <Text style={[styles.metadataText, { color: colors.text.main }]}>
+                  {occasions[outfit.occasion] || outfit.occasion}
+                </Text>
+              </View>
+            )}
+            
+            {outfit.gender && (
+              <View style={[styles.metadataItem, { backgroundColor: colors.background.deep }]}>
+                <Ionicons 
+                  name={
+                    outfit.gender === 'male' ? 'male-outline' :
+                    outfit.gender === 'female' ? 'female-outline' :
+                    'people-outline'
+                  } 
+                  size={18} 
+                  color={colors.primary.main} 
+                  style={styles.metadataIcon} 
+                />
+                <Text style={[styles.metadataText, { color: colors.text.main }]}>
+                  {genders[outfit.gender] || outfit.gender}
+                </Text>
+              </View>
+            )}
+          </View>
+          {outfit.description && (
+            <Text style={[styles.description, { color: colors.text.light }]}>{outfit.description}</Text>
           )}
-        </View>
-      </ScrollView>
+          {/* Paramètres de l'outfit (uniquement pour le propriétaire) */}
+          {isOwner && (
+            <View style={styles.settingsContainer}>
+              <View style={[styles.settingSeparator, { backgroundColor: colors.text.lighter }]} />
+              
+              {isUpdating ? (
+                <View style={styles.loadingIndicator}>
+                  <ActivityIndicator size="small" color={colors.primary.main} />
+                  <Text style={[styles.loadingText, { color: colors.text.main }]}>Mise à jour...</Text>
+                </View>
+              ) : (
+                <>
+                  <PublicSwitch 
+                    isPublic={outfit.isPublic !== false} 
+                    onToggle={handlePublicToggle}
+                    disabled={isUpdating}
+                  />
+                </>
+              )}
+
+              <View style={[styles.settingSeparator, { backgroundColor: colors.text.lighter }]} />
+            </View>
+          )}
+
+          {outfit.clothes.length > 0 && <View style={styles.clothesContainer}>
+            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Vêtements</Text>
+            {userWardrobe.length > 0 && user && user.id !== outfit.user_id && (
+              <View style={[styles.matchingSection, { backgroundColor: colors.background.deep }]}>
+                <MatchingProgressBar percentage={matchingPercentage} />
+              </View>
+            )}
+            {outfit.clothes.map((clothingItem : ClothingItem) => (
+              <ClotheView key={clothingItem.id} clothingItem={clothingItem.clothe!} userWardrobeItems={userWardrobe} showMatchStatus />
+            ))}
+          </View>}
+
+          <View style={[styles.actionsContainer, { borderColor: colors.text.lighter }]}>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={handleLike}
+            >
+              <Ionicons 
+                name={liked ? "heart" : "heart-outline"} 
+                size={28} 
+                color={liked ? colors.primary.main : colors.text.main} 
+              />
+              <Text style={[styles.actionText, { color: colors.text.main }]}>{likesCount}</Text>
+            </TouchableOpacity>
+            <View style={styles.actionButton}>
+              <Ionicons name="chatbubble-outline" size={24} color={colors.text.main} />
+              <Text style={[styles.actionText, { color: colors.text.main }]}>{outfit?.comments.length || 0}</Text>
+            </View>
+          </View>
+
+          <CommentsSection 
+            outfitId={id as string}
+            comments={outfit?.comments || []}
+            currentUserId={user?.id}
+            onCommentAdded={handleCommentAdded}
+            onCommentDeleted={handleCommentDeleted}
+          />
+        </ScrollView>
+      </GestureHandlerRootView>
     </SafeAreaView>
   );
 }
@@ -479,24 +432,20 @@ export default function OutfitDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ColorsTheme.white,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: ColorsTheme.white,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: ColorsTheme.white,
     padding: 20,
   },
   errorText: {
     fontSize: 18,
-    color: ColorsTheme.text.main,
     marginBottom: 20,
   },
   header: {
@@ -512,7 +461,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: ColorsTheme.text.main,
   },
   userInfo: {
     flexDirection: 'row',
@@ -521,7 +469,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   userContainer: {
     flexDirection: 'row',
@@ -530,48 +477,41 @@ const styles = StyleSheet.create({
   avatar: {
     width: 40,
     height: 40,
-    borderRadius: 20,
+    borderRadius: 15,
     marginRight: 10,
   },
   username: {
     fontSize: 16,
     fontWeight: '500',
-    color: ColorsTheme.text.main,
   },
   date: {
     fontSize: 14,
-    color: ColorsTheme.text.main,
   },
   outfitImageContainer: {
     height: 600,
     objectFit: 'contain',
-    marginBottom: 20,
   },
   outfitImage: {
     flex: 1,
     width: '100%',
     height: '100%',
-    borderRadius: 10,
   },
   description: {
     fontSize: 16,
-    color: '#666',
     lineHeight: 22,
     padding: 20,
-    paddingTop: 15,
-    paddingBottom: 5,
+    paddingVertical: 5,
   },
   metadataContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     padding: 20,
-    paddingTop: 0,
+    paddingTop: 10,
     paddingBottom: 10,
   },
   metadataItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: ColorsTheme.gray,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
@@ -582,8 +522,7 @@ const styles = StyleSheet.create({
     marginRight: 5,
   },
   metadataText: {
-    fontSize: 14,
-    color: ColorsTheme.text.main,
+    fontSize: 12,
   },
   settingsContainer: {
     paddingHorizontal: 20,
@@ -591,8 +530,7 @@ const styles = StyleSheet.create({
   },
   settingSeparator: {
     height: 1,
-    backgroundColor: ColorsTheme.background.main,
-    marginVertical: 10,
+    marginVertical: 4,
   },
   genderSelectorContainer: {
     marginTop: 10,
@@ -600,7 +538,6 @@ const styles = StyleSheet.create({
   sectionSubTitle: {
     fontSize: 16,
     fontWeight: '500',
-    color: ColorsTheme.text.main,
     marginBottom: 8,
   },
   loadingIndicator: {
@@ -612,7 +549,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginLeft: 10,
     fontSize: 14,
-    color: ColorsTheme.text.main,
   },
   clothesContainer: {
     padding: 20,
@@ -621,7 +557,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: ColorsTheme.text.main,
     marginBottom: 15,
   },
   actionsContainer: {
@@ -630,7 +565,6 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
     marginVertical: 10,
   },
   actionButton: {
@@ -640,7 +574,6 @@ const styles = StyleSheet.create({
   actionText: {
     marginLeft: 5,
     fontSize: 16,
-    color: ColorsTheme.text.main,
   },
   commentsSection: {
     padding: 20,
@@ -651,7 +584,6 @@ const styles = StyleSheet.create({
   },
   commentInput: {
     flex: 1,
-    backgroundColor: ColorsTheme.gray,
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -659,7 +591,6 @@ const styles = StyleSheet.create({
     maxHeight: 100,
   },
   commentButton: {
-    backgroundColor: ColorsTheme.primary.main,
     borderRadius: 20,
     paddingHorizontal: 15,
     paddingVertical: 8,
@@ -667,18 +598,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   commentButtonText: {
-    color: ColorsTheme.background.main,
     fontWeight: 'bold',
   },
   noComments: {
     fontSize: 14,
-    color: ColorsTheme.text.main,
     textAlign: 'center',
     paddingVertical: 20,
   },
   comment: {
     marginBottom: 20,
-    backgroundColor: ColorsTheme.gray,
     borderRadius: 10,
     padding: 15,
   },
@@ -700,32 +628,26 @@ const styles = StyleSheet.create({
   commentUsername: {
     fontSize: 14,
     fontWeight: '500',
-    color: ColorsTheme.text.main,
   },
   commentDate: {
     fontSize: 12,
-    color: ColorsTheme.text.main,
   },
   commentContent: {
     fontSize: 14,
-    color: ColorsTheme.text.main,
     lineHeight: 20,
   },
   button: {
-    backgroundColor: '#F97A5C',
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
   },
   buttonText: {
-    color: ColorsTheme.background.main,
     fontWeight: 'bold',
     fontSize: 16,
   },
   matchingSection: {
     marginBottom: 20,
     padding: 15,
-    backgroundColor: '#f9f9f9',
     borderRadius: 8,
   },
 }); 

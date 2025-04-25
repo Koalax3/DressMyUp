@@ -5,7 +5,8 @@ import * as OutfitService from './outfitService';
 import * as UserService from './userService';
 import * as StorageService from './storageService';
 import * as ClotheOutfitsService from './clotheOutfitsService';
-import { User } from '@/types';
+import * as PreferencesService from './preferencesService';
+
 // Exporter chaque service sous son propre espace de noms
 export {
   AuthService,
@@ -14,4 +15,5 @@ export {
   UserService,
   StorageService,
   ClotheOutfitsService,
+  PreferencesService,
 };

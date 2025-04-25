@@ -49,8 +49,8 @@ export default function RegisterScreen() {
         // Rediriger directement vers les onglets au lieu de la page de connexion
         Alert.alert(
           'Inscription réussie', 
-          'Votre compte a été créé avec succès.',
-          [{ text: 'OK', onPress: () => router.replace('/(tabs)') }]
+          'Votre compte a été créé avec succès. Vous allez recevoir un email de confirmation.',
+          [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
         );
       }
     } catch (error) {
@@ -71,7 +71,7 @@ export default function RegisterScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>DressMeUp</Text>
+        <Text style={styles.title}>DressMatch</Text>
         <Text style={styles.subtitle}>Créez votre compte</Text>
       </View>
 
@@ -131,7 +131,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ColorsTheme.white,
+    backgroundColor: ColorsTheme.background.main,
   },
   contentContainer: {
     padding: 20,
@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
   },
   buttonText: {
-    color: ColorsTheme.white,
+    color: ColorsTheme.background.main,
     fontSize: 16,
     fontWeight: 'bold',
   },

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { supabase } from '../../constants/Supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useClothing } from '../../contexts/ClothingContext';
 import { ClothingItem, ClothingSubType, ClothingType, Outfit } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,35 +19,79 @@ import GenderSelector from '@/components/GenderSelector';
 import { associateClothesToOutfit } from '@/services/clotheOutfitsService';
 import ClotheView from '@/components/ClotheView';
 import { MatchType } from '@/components/ClotheView';
+import DraggableClothingList from '@/components/DraggableClothingList';
+import EmptyWardrobeModal from '@/components/EmptyWardrobeModal';
+import GenericSelector from '@/components/GenericSelector';
+import { ColorsTheme } from '@/constants/Colors';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
+import SeasonSelector from '@/components/SeasonSelector';
+
+// Type pour les vêtements avec position
+type ClothingWithPosition = ClothingItem & { position?: number };
+type Season = 'all' | 'spring' | 'summer' | 'fall' | 'winter';
 
 export default function CreateOutfitScreen() {
   const { user } = useAuth();
+  const { clothes: clothesFromContext, isLoading: isLoadingClothes, refreshClothes, hasClothes } = useClothing();
   const params = useLocalSearchParams();
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [season, setSeason] = useState('all');
-  const [occasion, setOccasion] = useState('casual');
+  const [season, setSeason] = useState<Season>('all');
+  const [occasion, setOccasion] = useState<string | null>(null);
   const [gender, setGender] = useState('unisex');
   const [clothes, setClothes] = useState<ClothingItem[]>([]);
-  const [selectedClothes, setSelectedClothes] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [selectedClothesIds, setSelectedClothesIds] = useState<string[]>([]);
+  const [selectedClothesWithPositions, setSelectedClothesWithPositions] = useState<ClothingWithPosition[]>([]);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [outfitImage, setOutfitImage] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [matchStatus, setMatchStatus] = useState<MatchType>(MatchType.NONE);
+  const [showEmptyWardrobeModal, setShowEmptyWardrobeModal] = useState(false);
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
 
+  // Utiliser les vêtements du contexte
   useEffect(() => {
-    fetchClothes();
-  }, [user]);
+    if (clothesFromContext.length > 0) {
+      setClothes(clothesFromContext);
+      setLoading(false);
+      setShowEmptyWardrobeModal(false);
+    } else if (!isLoadingClothes) {
+      // Si le contexte est vide et qu'il n'est pas en train de charger, on tente de rafraîchir les données
+      refreshClothes();
+      // Afficher le modal si aucun vêtement n'est disponible après le chargement
+    }
+  }, [clothesFromContext, isLoadingClothes, loading]);
+
+  // Mettre à jour selectedClothesWithPositions quand selectedClothesIds ou clothes changent
+  useEffect(() => {
+    if (selectedClothesIds.length > 0 && clothes.length > 0) {
+      const clothesWithPositions = selectedClothesIds.map((id, index) => {
+        const clotheItem = clothes.find(c => c.id === id);
+        return clotheItem ? { ...clotheItem, position: index } : null;
+      }).filter(Boolean) as ClothingWithPosition[];
+      
+      setSelectedClothesWithPositions(clothesWithPositions);
+    } else {
+      setSelectedClothesWithPositions([]);
+    }
+  }, [selectedClothesIds, clothes]);
 
   useFocusEffect(
     React.useCallback(() => {
       if (user) {
-        fetchClothes();
-        
+        // Rafraîchir les vêtements depuis le contexte si nécessaire
+        if (clothesFromContext.length === 0 && !isLoadingClothes) {
+          refreshClothes();
+        }
+        if (!hasClothes && !showEmptyWardrobeModal) {
+          setShowEmptyWardrobeModal(true);
+        }
         // Ajouter un vêtement spécifique à la sélection
         if (params.selectItem) {
-          setSelectedClothes(prev => 
+          setSelectedClothesIds(prev => 
             prev.includes(params.selectItem as string) 
               ? prev 
               : [...prev, params.selectItem as string]
@@ -57,7 +102,7 @@ export default function CreateOutfitScreen() {
         if (params.selectedClothes && params.returnFromSelect === 'true') {
           // Récupérer les vêtements sélectionnés
           const selectedIds = (params.selectedClothes as string).split(',').filter(id => id !== '');
-          setSelectedClothes(selectedIds);
+          setSelectedClothesIds(selectedIds);
           
           // Récupérer les autres informations du formulaire
           if (params.formName) setName(params.formName as string);
@@ -69,26 +114,11 @@ export default function CreateOutfitScreen() {
         } else if (params.selectedClothes && !params.returnFromSelect) {
           // Si on revient pour la première fois de l'écran de sélection, on récupère seulement les vêtements
           const selectedIds = (params.selectedClothes as string).split(',').filter(id => id !== '');
-          setSelectedClothes(selectedIds);
+          setSelectedClothesIds(selectedIds);
         }
       }
-    }, [user, params.selectItem, params.selectedClothes, params.returnFromSelect, params.formName, params.formDescription, params.formSeason, params.formOccasion, params.formGender, params.formImage])
+    }, [user, params.selectItem, params.selectedClothes, params.returnFromSelect, params.formName, params.formDescription, params.formSeason, params.formOccasion, params.formGender, params.formImage, clothesFromContext, isLoadingClothes])
   );
-
-  const fetchClothes = async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      const clothesData = await ClothingService.fetchUserClothes(user.id);
-      setClothes(clothesData);
-    } catch (error) {
-      console.error('Erreur lors de la récupération des vêtements:', error);
-      Alert.alert('Erreur', 'Impossible de charger vos vêtements');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const navigateToSelectClothes = () => {
     // Sauvegarder l'état du formulaire avant la navigation
@@ -131,7 +161,7 @@ export default function CreateOutfitScreen() {
   const saveOutfit = async () => {
     if (!user) return;
     
-    if (!name || selectedClothes.length === 0) {
+    if (!name || selectedClothesIds.length === 0) {
       Alert.alert('Erreur', 'Veuillez donner un nom à votre tenue et sélectionner au moins un vêtement');
       return;
     }
@@ -167,10 +197,21 @@ export default function CreateOutfitScreen() {
 
       const outfitId = newOutfit.id;
 
-      // Étape 3: Associer les vêtements à la tenue
+      // Étape 3: Associer les vêtements à la tenue avec leurs positions
+      // On trie les vêtements selon leurs positions dans selectedClothesWithPositions
+      const clothingIdsWithPositions = selectedClothesWithPositions.map(item => ({
+        id: item.id,
+        position: item.position || 0
+      }));
+      
+      // On trie les ids par position
+      const sortedClothingIds = clothingIdsWithPositions
+        .sort((a, b) => (a.position || 0) - (b.position || 0))
+        .map(item => item.id);
+
       const success = await associateClothesToOutfit(
         outfitId,
-        selectedClothes
+        sortedClothingIds
       );
 
       if (!success) {
@@ -183,7 +224,8 @@ export default function CreateOutfitScreen() {
         [{ text: 'OK', onPress: () => {
           setName('');
           setDescription('');
-          setSelectedClothes([]);
+          setSelectedClothesIds([]);
+          setSelectedClothesWithPositions([]);
           setOutfitImage(null);
           router.replace({
             pathname: '/outfit/[id]',
@@ -199,248 +241,130 @@ export default function CreateOutfitScreen() {
     }
   };
 
-  const selectedClothesItems = clothes.filter(item => selectedClothes.includes(item.id));
-
-  // Ajouter une fonction pour vérifier si les vêtements matchent entre eux
-  useEffect(() => {
-    checkOutfitMatching();
-  }, [selectedClothesItems]);
-  
-  const checkOutfitMatching = () => {
-    if (selectedClothesItems.length <= 1) {
-      setMatchStatus(MatchType.NONE);
-      return;
-    }
-    
-    // Vérifier si tous les vêtements ont la même couleur ou des couleurs complémentaires
-    const colors = selectedClothesItems.map(item => item.color);
-    const uniqueColors = new Set(colors);
-    
-    // Vérifier si tous les vêtements ont le même motif ou des motifs complémentaires
-    const patterns = selectedClothesItems.map(item => item.pattern || 'plain');
-    const uniquePatterns = new Set(patterns);
-    
-    // Vérifier si tous les vêtements ont le même matériau ou des matériaux complémentaires
-    const materials = selectedClothesItems.map(item => item.material).filter(Boolean);
-    const uniqueMaterials = new Set(materials);
-    
-    // Vérifier la correspondance des marques
-    const brands = selectedClothesItems.map(item => item.brand).filter(Boolean);
-    const uniqueBrands = new Set(brands);
-    
-    // Un match parfait: même couleur ou pas plus de 2 couleurs différentes,
-    // même motif ou pas plus de 2 motifs différents,
-    // même matériau ou pas plus de 2 matériaux différents
-    const perfectMatch = 
-      (uniqueColors.size <= 2) && 
-      (uniquePatterns.size <= 2) &&
-      (uniqueMaterials.size <= 2);
-    
-    // Un match similaire: même couleur et pas plus de 3 motifs/matériaux différents
-    const similarMatch = 
-      (uniqueColors.size <= 2) && 
-      (uniquePatterns.size <= 3);
-    
-    if (perfectMatch) {
-      setMatchStatus(MatchType.PERFECT);
-    } else if (similarMatch) {
-      setMatchStatus(MatchType.SIMILAR);
-    } else {
-      setMatchStatus(MatchType.NONE);
-    }
-  };
-  
-  const getMatchStatusMessage = () => {
-    if (selectedClothesItems.length <= 1) {
-      return null;
-    }
-    
-    switch (matchStatus) {
-      case MatchType.PERFECT:
-        return (
-          <View style={styles.matchStatusContainer}>
-            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            <Text style={[styles.matchStatusText, { color: '#4CAF50' }]}>
-              Ces vêtements sont parfaitement assortis
-            </Text>
-          </View>
-        );
-      case MatchType.SIMILAR:
-        return (
-          <View style={styles.matchStatusContainer}>
-            <Ionicons name="alert-circle" size={20} color="#FF9800" />
-            <Text style={[styles.matchStatusText, { color: '#FF9800' }]}>
-              Ces vêtements sont relativement bien assortis
-            </Text>
-          </View>
-        );
-      case MatchType.NONE:
-        return (
-          <View style={styles.matchStatusContainer}>
-            <Ionicons name="close-circle" size={20} color="#F44336" />
-            <Text style={[styles.matchStatusText, { color: '#F44336' }]}>
-              Ces vêtements ne sont pas assortis
-            </Text>
-          </View>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Créer une tenue</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
+      <View style={[styles.header, { borderBottomColor: colors.text.lighter }]}>
+        <Text style={[styles.title, { color: colors.text.main }]}>Créer une tenue</Text>
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.formSection}>
           {/* Section pour l'image de la tenue */}
-          <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Image de la tenue</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 20, color: colors.text.main }]}>Image de la tenue</Text>
           <ImagePicker 
             imageUri={outfitImage}
             onImageSelected={(uri) => setOutfitImage(uri)}
             onImageRemoved={() => setOutfitImage(null)}
             uploading={uploadingImage}
           />
-          <Text style={styles.sectionTitle}>Informations</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Informations</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: colors.gray,
+              color: colors.text.main
+            }]}
             placeholder="Nom de la tenue*"
+            placeholderTextColor={colors.text.light}
             value={name}
             onChangeText={setName}
           />
           
           {/* Description de la tenue */}
-          <Text style={styles.sectionTitle}>Description</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Description</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[
+              styles.input, 
+              styles.textArea,
+              { 
+                backgroundColor: colors.gray,
+                color: colors.text.main
+              }
+            ]}
             multiline
             numberOfLines={4}
             value={description}
             onChangeText={setDescription}
             placeholder="Décrivez votre tenue (optionnel)"
+            placeholderTextColor={colors.text.light}
           />
 
           {/* Saison */}
-          <Text style={styles.sectionTitle}>Saison</Text>
-          <View style={styles.seasonContainer}>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'all' && styles.seasonButtonActive]}
-              onPress={() => setSeason('all')}
-            >
-              <Ionicons name="calendar-outline" size={18} color={season === 'all' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'all' && styles.seasonButtonTextActive]}>Toutes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'spring' && styles.seasonButtonActive]}
-              onPress={() => setSeason('spring')}
-            >
-              <Ionicons name="flower-outline" size={18} color={season === 'spring' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'spring' && styles.seasonButtonTextActive]}>Printemps</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'summer' && styles.seasonButtonActive]}
-              onPress={() => setSeason('summer')}
-            >
-              <Ionicons name="sunny-outline" size={18} color={season === 'summer' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'summer' && styles.seasonButtonTextActive]}>Été</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'fall' && styles.seasonButtonActive]}
-              onPress={() => setSeason('fall')}
-            >
-              <Ionicons name="leaf-outline" size={18} color={season === 'fall' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'fall' && styles.seasonButtonTextActive]}>Automne</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'winter' && styles.seasonButtonActive]}
-              onPress={() => setSeason('winter')}
-            >
-              <Ionicons name="snow-outline" size={18} color={season === 'winter' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'winter' && styles.seasonButtonTextActive]}>Hiver</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Saison</Text>
+          <SeasonSelector 
+            selectedSeason={season} 
+            onSelectSeason={setSeason} 
+          />
 
           {/* Occasion */}
-          <Text style={styles.sectionTitle}>Occasion</Text>
-          <View style={styles.occasionContainer}>
-            {Object.entries(occasions).map(([key, value]) => (
-              <TouchableOpacity
-                key={key}
-                style={[styles.occasionButton, occasion === key && styles.occasionButtonActive]}
-                onPress={() => setOccasion(key)}
-              >
-                <Text style={[styles.occasionButtonText, occasion === key && styles.occasionButtonTextActive]}>{value}</Text> 
-              </TouchableOpacity>
-            ))}
+          <View style={styles.occasionSelector}>
+            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Style</Text>
+            <GenericSelector
+              options={occasions}
+              selectedOption={occasion}
+              onOptionSelect={(value) => setOccasion(value as string)}
+              title="Sélectionner un style"
+              placeholder="Choisir un style"
+            />
           </View>
 
           {/* Genre */}
-          <Text style={styles.sectionTitle}>Genre</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Genre</Text>
           <GenderSelector 
             selectedGender={gender}
             onGenderChange={setGender}
           />
         </View>
 
-        <View style={styles.selectedSection}>
-          <Text style={styles.sectionTitle}>Vêtements sélectionnés ({selectedClothes.length})</Text>
-          {selectedClothes.length === 0 ? (
-            <View style={styles.emptySelection}>
-              <Text style={styles.emptyText}>Aucun vêtement sélectionné</Text>
-              <Text style={styles.emptySubtext}>Sélectionnez des vêtements en appuyant sur le bouton ci-dessous</Text>
+        {/* Vêtements sélectionnés */}
+        {selectedClothesWithPositions.length > 0 && (
+          <View style={styles.selectedSection}>
+            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Vêtements sélectionnés</Text>
+            <Text style={[styles.helperText, { color: colors.text.light }]}>Maintenez et faites glisser pour réorganiser</Text>
+            <View style={styles.draggableListContainer}>
+              <DraggableClothingList 
+                items={selectedClothesWithPositions} 
+                onDragEnd={(data) => {
+                  setSelectedClothesWithPositions(data);
+                  setSelectedClothesIds(data.map(item => item.id));
+                }}
+                onRemoveItem={(id) => {
+                  setSelectedClothesWithPositions(prev => prev.filter(item => item.id !== id));
+                  setSelectedClothesIds(prev => prev.filter(itemId => itemId !== id));
+                }}
+              />
             </View>
-          ) : (
-            <>
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.selectedClothesContainer}
-              >
-                {selectedClothesItems.map(item => (
-                  <TouchableOpacity 
-                    key={item.id} 
-                    style={styles.selectedClothingItem}
-                    onPress={() => {
-                      setSelectedClothes(prev => prev.filter(id => id !== item.id));
-                    }}
-                  >
-                    <Image source={{ uri: item.image_url }} style={styles.selectedClothingImage} />
-                    <View style={styles.removeIcon}>
-                      <Ionicons name="close-circle" size={20} color="#F97A5C" />
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-              {getMatchStatusMessage()}
-            </>
-          )}
-          
+          </View>
+        )}
+
+        <View style={styles.wardrobeButtonContainer}>
           <TouchableOpacity 
-            style={styles.wardrobeButton}
+            style={[styles.wardrobeButton, { backgroundColor: colors.secondary.main }]}
             onPress={navigateToSelectClothes}
           >
-            <Ionicons name="shirt-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.wardrobeButtonText}>
-              {selectedClothes.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
+            <Ionicons name="shirt-outline" size={20} color={colors.text.bright} style={{ marginRight: 8 }} />
+            <Text style={[styles.wardrobeButtonText, { color: colors.white }]}>
+              {selectedClothesIds.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
             </Text>
           </TouchableOpacity>
         </View>
 
         <TouchableOpacity 
-          style={styles.saveButton}
+          style={[styles.saveButton, { backgroundColor: colors.primary.main }]}
           onPress={saveOutfit}
           disabled={saving}
         >
           {saving ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.text.bright} />
           ) : (
-            <Text style={styles.saveButtonText}>Créer la tenue</Text>
+            <Text style={[styles.saveButtonText, { color: colors.white }]}>Créer la tenue</Text>
           )}
         </TouchableOpacity>
       </ScrollView>
+
+      <EmptyWardrobeModal 
+        visible={showEmptyWardrobeModal}
+        onClose={() => setShowEmptyWardrobeModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -448,18 +372,15 @@ export default function CreateOutfitScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
   },
   content: {
     flex: 1,
@@ -471,11 +392,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 15,
   },
   input: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -489,7 +408,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptySelection: {
-    backgroundColor: '#f9f9f9',
     padding: 20,
     borderRadius: 8,
     alignItems: 'center',
@@ -498,13 +416,15 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#666',
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#999',
     marginTop: 5,
     textAlign: 'center',
+  },
+  helperText: {
+    fontSize: 14,
+    marginBottom: 10,
   },
   selectedClothesContainer: {
     paddingVertical: 10,
@@ -527,7 +447,6 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   wardrobeButton: {
-    backgroundColor: '#F97A5C',
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
@@ -535,12 +454,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   wardrobeButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
   saveButton: {
-    backgroundColor: '#F97A5C',
     borderRadius: 8,
     padding: 15,
     alignItems: 'center',
@@ -548,75 +465,20 @@ const styles = StyleSheet.create({
     marginBottom: 30,
   },
   saveButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },
-  seasonContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  seasonButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f2f2f2',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+  seasonSelector: {
     marginBottom: 10,
-    width: '48%',
-    marginHorizontal: '1%',
   },
-  seasonButtonActive: {
-    backgroundColor: '#F97A5C',
-  },
-  seasonButtonText: {
-    color: '#666',
-    fontSize: 14,
-    marginLeft: 6,
-  },
-  seasonButtonTextActive: {
-    color: '#fff',
-  },
-  occasionContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  occasionButton: {
-    backgroundColor: '#f2f2f2',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+  occasionSelector: {
     marginBottom: 10,
-    width: '48%',
-    alignItems: 'center',
-    marginHorizontal: '1%',
   },
-  occasionButtonActive: {
-    backgroundColor: '#F97A5C'
-  },
-  occasionButtonText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  occasionButtonTextActive: {
-    color: '#fff',
-  },
-  matchStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 10,
+  wardrobeButtonContainer: {
     marginTop: 10,
-    borderRadius: 8,
-    backgroundColor: '#f9f9f9',
+    marginBottom: 15,
   },
-  matchStatusText: {
-    marginLeft: 8,
-    fontSize: 14,
-    fontWeight: '500',
+  draggableListContainer: {
+    marginBottom: 20,
   },
 }); 

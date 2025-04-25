@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { occasions, seasons, genders } from '@/constants/Outfits';
+import GenericSelector from './GenericSelector';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
 
 export type OutfitFilters = {
   seasons: string[];
   occasions: string[];
   genders: string[];
-  onlyFavorites: boolean;
+  withFavorites: boolean;
 };
 
 type OutfitFilterModalProps = {
@@ -23,11 +26,14 @@ const OutfitFilterModal = ({
   onApplyFilters, 
   currentFilters 
 }: OutfitFilterModalProps) => {
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
+
   // État local pour les filtres
   const [seasonsFilter, setSeasonsFilter] = useState<string[]>(currentFilters.seasons);
   const [occasionsFilter, setOccasionsFilter] = useState<string[]>(currentFilters.occasions);
   const [gendersFilter, setGendersFilter] = useState<string[]>(currentFilters.genders || []);
-  const [onlyFavoritesFilter, setOnlyFavoritesFilter] = useState<boolean>(currentFilters.onlyFavorites);
+  const [withFavoritesFilter, setwithFavoritesFilter] = useState<boolean>(currentFilters.withFavorites);
   
   useEffect(() => {
     if (visible) {
@@ -35,7 +41,7 @@ const OutfitFilterModal = ({
       setSeasonsFilter(currentFilters.seasons);
       setOccasionsFilter(currentFilters.occasions);
       setGendersFilter(currentFilters.genders || []);
-      setOnlyFavoritesFilter(currentFilters.onlyFavorites);
+      setwithFavoritesFilter(currentFilters.withFavorites);
     }
   }, [visible, currentFilters]);
   
@@ -44,7 +50,7 @@ const OutfitFilterModal = ({
       seasons: seasonsFilter,
       occasions: occasionsFilter,
       genders: gendersFilter,
-      onlyFavorites: onlyFavoritesFilter
+      withFavorites: withFavoritesFilter
     });
     onClose();
   };
@@ -77,36 +83,38 @@ const OutfitFilterModal = ({
     setSeasonsFilter([]);
     setOccasionsFilter([]);
     setGendersFilter([]);
-    setOnlyFavoritesFilter(false);
+    setwithFavoritesFilter(false);
   };
   
   if (!visible) return null;
   
   return (
-    <View style={styles.modalOverlay}>
-      <View style={styles.modalContainer}>
+    <View style={[styles.modalOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+      <View style={[styles.modalContainer, { backgroundColor: colors.background.main }]}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Filtrer les tenues</Text>
+          <Text style={[styles.modalTitle, { color: colors.text.main }]}>Filtrer les tenues</Text>
           <TouchableOpacity onPress={onClose}>
-            <Ionicons name="close" size={24} color="#333" />
+            <Ionicons name="close" size={24} color={colors.text.main} />
           </TouchableOpacity>
         </View>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Saisons</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Saisons</Text>
           <View style={styles.optionsContainer}>
             {Object.keys(seasons).map(season => (
               <TouchableOpacity 
                 key={season}
                 style={[
                   styles.optionButton,
-                  seasonsFilter.includes(season) && styles.optionButtonActive
+                  { backgroundColor: colors.gray },
+                  seasonsFilter.includes(season) && [styles.optionButtonActive, { backgroundColor: colors.primary.main }]
                 ]}
                 onPress={() => toggleSeason(season)}
               >
                 <Text style={[
                   styles.optionText,
-                  seasonsFilter.includes(season) && styles.optionTextActive
+                  { color: colors.text.light },
+                  seasonsFilter.includes(season) && [styles.optionTextActive, { color: colors.text.bright }]
                 ]}>
                   {seasons[season]}
                 </Text>
@@ -116,37 +124,27 @@ const OutfitFilterModal = ({
         </View>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Occasions</Text>
-          <View style={styles.optionsContainer}>
-            {Object.keys(occasions).map(occasion => (
-              <TouchableOpacity 
-                key={occasion}
-                style={[
-                  styles.optionButton,
-                  occasionsFilter.includes(occasion) && styles.optionButtonActive
-                ]}
-                onPress={() => toggleOccasion(occasion)}
-              >
-                <Text style={[
-                  styles.optionText,
-                  occasionsFilter.includes(occasion) && styles.optionTextActive
-                ]}>
-                  {occasions[occasion]}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Occasions</Text>
+          <GenericSelector
+            options={occasions}
+            selectedOption={occasionsFilter}
+            onOptionSelect={(option) => setOccasionsFilter(Array.isArray(option) ? option : [option])}
+            title="Occasions"
+            multiSelect
+            searchable
+          />
         </View>
         
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Genre</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Genre</Text>
           <View style={styles.optionsContainer}>
             {Object.keys(genders).map(gender => (
               <TouchableOpacity 
                 key={gender}
                 style={[
                   styles.optionButton,
-                  gendersFilter.includes(gender) && styles.optionButtonActive
+                  { backgroundColor: colors.gray },
+                  gendersFilter.includes(gender) && [styles.optionButtonActive, { backgroundColor: colors.primary.main }]
                 ]}
                 onPress={() => toggleGender(gender)}
               >
@@ -158,12 +156,13 @@ const OutfitFilterModal = ({
                       'people-outline'
                     } 
                     size={16} 
-                    color={gendersFilter.includes(gender) ? '#fff' : '#666'} 
+                    color={gendersFilter.includes(gender) ? colors.text.bright : colors.text.light} 
                     style={styles.genderIcon}
                   />
                   <Text style={[
                     styles.optionText,
-                    gendersFilter.includes(gender) && styles.optionTextActive
+                    { color: colors.text.light },
+                    gendersFilter.includes(gender) && [styles.optionTextActive, { color: colors.text.bright }]
                   ]}>
                     {genders[gender]}
                   </Text>
@@ -173,33 +172,19 @@ const OutfitFilterModal = ({
           </View>
         </View>
         
-        <View style={styles.section}>
-          <TouchableOpacity 
-            style={styles.favoritesButton}
-            onPress={() => setOnlyFavoritesFilter(!onlyFavoritesFilter)}
-          >
-            <Ionicons 
-              name={onlyFavoritesFilter ? "heart" : "heart-outline"} 
-              size={24} 
-              color={onlyFavoritesFilter ? "#F97A5C" : "#666"} 
-            />
-            <Text style={styles.favoritesText}>Afficher mes favoris</Text>
-          </TouchableOpacity>
-        </View>
-        
         <View style={styles.buttonsContainer}>
           <TouchableOpacity 
-            style={styles.resetButton}
+            style={[styles.resetButton, { backgroundColor: colors.secondary.main }]}
             onPress={resetFilters}
           >
-            <Text style={styles.resetButtonText}>Réinitialiser</Text>
+            <Text style={[styles.resetButtonText, { color: colors.white }]}>Réinitialiser</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={styles.applyButton}
+            style={[styles.applyButton, { backgroundColor: colors.primary.main }]}
             onPress={handleApply}
           >
-            <Text style={styles.applyButtonText}>Appliquer</Text>
+            <Text style={[styles.applyButtonText, { color: colors.white }]}>Appliquer</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -214,7 +199,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 1000,
@@ -222,7 +206,6 @@ const styles = StyleSheet.create({
   modalContainer: {
     width: '90%',
     maxHeight: '80%',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
   },
@@ -235,7 +218,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
   },
   section: {
     marginBottom: 20,
@@ -243,7 +225,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 10,
   },
   optionsContainer: {
@@ -254,19 +235,15 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
-    backgroundColor: '#f5f5f5',
     marginRight: 8,
     marginBottom: 8,
   },
   optionButtonActive: {
-    backgroundColor: '#F97A5C',
   },
   optionText: {
     fontSize: 14,
-    color: '#666',
   },
   optionTextActive: {
-    color: '#fff',
     fontWeight: 'bold',
   },
   genderOption: {
@@ -284,7 +261,6 @@ const styles = StyleSheet.create({
   favoritesText: {
     marginLeft: 10,
     fontSize: 16,
-    color: '#333',
   },
   buttonsContainer: {
     flexDirection: 'row',
@@ -295,22 +271,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ccc',
   },
   resetButtonText: {
     fontSize: 16,
-    color: '#666',
   },
   applyButton: {
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
-    backgroundColor: '#F97A5C',
   },
   applyButtonText: {
     fontSize: 16,
-    color: '#fff',
     fontWeight: 'bold',
   },
 });

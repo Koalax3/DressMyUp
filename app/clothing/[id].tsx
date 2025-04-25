@@ -1,50 +1,63 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Share } from 'react-native';
-import { supabase } from '../../constants/Supabase';
 import { useAuth } from '../../contexts/AuthContext';
+import { useClothing } from '../../contexts/ClothingContext';
 import { ClothingItem } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { getClothingById, deleteClothing } from '../../services/clothingService';
+import { deleteClothing } from '../../services/clothingService';
 import { subtypesByType, types } from '@/constants/Clothes';
 import { fits } from '@/constants/Clothes';
-import { COLORS, PATTERNS, BRANDS } from '@/constants/Clothes';
-import ColorDot from '@/components/ColorDot';
+import { PATTERNS } from '@/constants/Clothes';
 import { MATERIALS } from '@/constants/Materials';
 import MatchingClothesSection from '@/components/MatchingClothesSection';
 import { ColorsTheme } from '@/constants/Colors';
+import MultiColorDisplay from '@/components/MultiColorDisplay';
+import Toast from 'react-native-toast-message';
+import Header from '@/components/Header';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
 
 export default function ClothingDetailScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
+  const { loadClothing, deleteClothing: deleteClothingFromContext } = useClothing();
   const [clothingItem, setClothingItem] = useState<ClothingItem | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchClothingItem();
-  }, [id]);
-
-  const fetchClothingItem = async () => {
-    if (!id || !user) return;
-
+  const [refreshing, setRefreshing] = useState(false);
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
+  
+  // Récupérer le vêtement au chargement avec la fonction loadClothing qui gère les vêtements de tous les utilisateurs
+  const fetchClothing = async () => {
+    if (!id) return;
+    
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await getClothingById(id.toString(), user.id);
-      if (data) {
-        setClothingItem(data);
-      } else {
-        router.back();
-      }
+      const clothing = await loadClothing(id.toString());
+      setClothingItem(clothing);
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur lors de la récupération du vêtement:', error);
       Alert.alert('Erreur', 'Impossible de charger les détails du vêtement.');
     } finally {
       setLoading(false);
     }
   };
+  useEffect(() => {
+    fetchClothing();
+  }, [id]);
 
+  useEffect(() => {
+    if (refreshing) {
+      fetchClothing();
+      setRefreshing(false);
+    }
+  }, [refreshing]);
+  
   const handleDelete = () => {
+    if (!clothingItem) return;
+    
     Alert.alert(
       'Confirmation',
       'Êtes-vous sûr de vouloir supprimer ce vêtement ?',
@@ -63,7 +76,12 @@ export default function ClothingDetailScreen() {
       const success = await deleteClothing(clothingItem.id, user.id);
       
       if (success) {
-        Alert.alert('Succès', 'Vêtement supprimé avec succès.');
+        // Mettre à jour le contexte en supprimant le vêtement
+        deleteClothingFromContext(clothingItem.id);
+        Toast.show({
+          type: 'delete',
+          text1: 'Vêtement supprimé avec succès',
+        });
         router.back();
       } else {
         Alert.alert('Erreur', 'Impossible de supprimer ce vêtement. Veuillez réessayer.');
@@ -81,7 +99,7 @@ export default function ClothingDetailScreen() {
 
     try {
       await Share.share({
-        message: `Découvrez mon vêtement "${clothingItem.name}" sur DressMeUp!`,
+        message: `Découvrez mon vêtement "${clothingItem.name}" sur DressMatch!`,
         url: clothingItem.image_url,
       });
     } catch (error) {
@@ -106,17 +124,17 @@ export default function ClothingDetailScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#F97A5C" />
+      <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.background.main }]}>
+        <ActivityIndicator size="large" color={colors.primary.main} />
       </SafeAreaView>
     );
   }
 
   if (!clothingItem) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
-        <Text style={styles.errorText}>Vêtement introuvable</Text>
-        <TouchableOpacity style={styles.button} onPress={() => router.back()}>
+      <SafeAreaView style={[styles.errorContainer, { backgroundColor: colors.background.main }]}>
+        <Text style={[styles.errorText, { color: colors.text.main }]}>Vêtement introuvable</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary.main }]} onPress={() => router.back()}>
           <Text style={styles.buttonText}>Retour</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -124,69 +142,65 @@ export default function ClothingDetailScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
       <ScrollView>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={ColorsTheme.text.main} />
-          </TouchableOpacity>
-          <View style={styles.headerActions}>
+        <Header title={" "} back >
+        <View style={styles.headerActions}>
             <TouchableOpacity onPress={shareClothing} style={styles.actionButton}>
-              <Ionicons name="share-outline" size={24} color={ColorsTheme.secondary.dark} />
+              <Ionicons name="share-outline" size={24} color={isDarkMode ? colors.text.bright : colors.secondary.dark} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
-              <Ionicons name="trash-outline" size={24} color={ColorsTheme.primary.main} />
-            </TouchableOpacity>
+            {user && user.id === clothingItem.user_id && <TouchableOpacity onPress={handleDelete} style={styles.actionButton}>
+              <Ionicons name="trash-outline" size={24} color={colors.primary.main} />
+            </TouchableOpacity>}
           </View>
-        </View>
+        </Header>
 
         <View style={styles.imageContainer}>
-          <Image source={{ uri: clothingItem.image_url }} style={styles.image} />
+          <Image source={{ uri: clothingItem.image_url }} style={[styles.image, { backgroundColor: colors.background.deep }]} />
         </View>
 
         <View style={styles.infoContainer}>
-          <Text style={styles.name}>{clothingItem.name}</Text>
+          <Text style={[styles.name, { color: colors.text.main }]}>{clothingItem.name}</Text>
           {clothingItem.brand && (
-            <Text style={styles.brand}>{clothingItem.brand}</Text>
+            <Text style={[styles.brand, { color: colors.text.light }]}>{clothingItem.brand} {clothingItem.reference && `- ${clothingItem.reference}`}</Text>
           )}
 
           <View style={styles.detailsContainer}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Type</Text>
-              <Text style={styles.detailValue}>{getTypeLabel(clothingItem.type)}</Text>
+            <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
+              <Text style={[styles.detailLabel, { color: colors.text.light }]}>Type</Text>
+              <Text style={[styles.detailValue, { color: colors.text.main }]}>{getTypeLabel(clothingItem.type)}</Text>
             </View>
             
             {clothingItem.subtype && (
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Sous-type</Text>
-                <Text style={styles.detailValue}>{getSubtypeLabel(clothingItem.type, clothingItem.subtype)}</Text>
+              <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
+                <Text style={[styles.detailLabel, { color: colors.text.light }]}>Sous-type</Text>
+                <Text style={[styles.detailValue, { color: colors.text.main }]}>{getSubtypeLabel(clothingItem.type, clothingItem.subtype)}</Text>
               </View>
             )}
             
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Couleur</Text>
+            <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
+              <Text style={[styles.detailLabel, { color: colors.text.light }]}>Couleur</Text>
               <View style={styles.colorContainer}>
-                <ColorDot colorValue={COLORS.find(c => c.id === clothingItem.color)?.value || clothingItem.color} />
-                <Text style={styles.detailValue}>{COLORS.find(c => c.id === clothingItem.color)?.name || clothingItem.color}</Text>
+                <MultiColorDisplay colorString={clothingItem.color} />
               </View>
             </View>
             
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>Motif</Text>
-              <Text style={styles.detailValue}>{PATTERNS[clothingItem.pattern as keyof typeof PATTERNS] || PATTERNS['plain']}</Text>
+            <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
+              <Text style={[styles.detailLabel, { color: colors.text.light }]}>Motif</Text>
+              <Text style={[styles.detailValue, { color: colors.text.main }]}>{PATTERNS[clothingItem.pattern as keyof typeof PATTERNS] || PATTERNS['plain']}</Text>
             </View>
             
             {clothingItem.material && (
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Matériau</Text>
-                <Text style={styles.detailValue}>{MATERIALS[clothingItem.material] || clothingItem.material}</Text>
+              <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
+                <Text style={[styles.detailLabel, { color: colors.text.light }]}>Matériau</Text>
+                <Text style={[styles.detailValue, { color: colors.text.main }]}>{MATERIALS[clothingItem.material] || clothingItem.material}</Text>
               </View>
             )}
 
             {clothingItem.fit && (
-              <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Coupe</Text>
-                <Text style={styles.detailValue}>{getFitLabel(clothingItem.fit)}</Text>
+              <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
+                <Text style={[styles.detailLabel, { color: colors.text.light }]}>Coupe</Text>
+                <Text style={[styles.detailValue, { color: colors.text.main }]}>{getFitLabel(clothingItem.fit)}</Text>
               </View>
             )}
 
@@ -194,25 +208,25 @@ export default function ClothingDetailScreen() {
 
           {user && user.id === clothingItem.user_id && <View style={styles.actionsContainer}>
             <TouchableOpacity 
-              style={styles.editButton}
+              style={[styles.editButton, { backgroundColor: colors.primary.main }]}
               onPress={() => router.push({
                 pathname: '/clothing/edit/[id]',
                 params: { id: clothingItem.id }
               })}
             >
-              <Ionicons name="create-outline" size={20} color="#fff" />
-              <Text style={styles.editButtonText}>Modifier</Text>
+              <Ionicons name="create-outline" size={20} color={colors.text.bright} />
+              <Text style={[styles.editButtonText, { color: colors.text.bright }]}>Modifier</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
-              style={styles.outfitButton}
+              style={[styles.outfitButton, { backgroundColor: colors.secondary.main }]}
               onPress={() => router.push({
                 pathname: '/(tabs)/create',
                 params: { selectItem: clothingItem.id }
               })}
             >
-              <Ionicons name="shirt-outline" size={20} color="#fff" />
-              <Text style={styles.outfitButtonText}>Créer une tenue</Text>
+              <Ionicons name="shirt-outline" size={20} color={colors.text.bright} />
+              <Text style={[styles.outfitButtonText, { color: colors.text.bright }]}>Créer une tenue</Text>
             </TouchableOpacity>
           </View>}
 
@@ -227,24 +241,20 @@ export default function ClothingDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ColorsTheme.white,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: ColorsTheme.white,
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: ColorsTheme.white,
     padding: 20,
   },
   errorText: {
     fontSize: 18,
-    color: ColorsTheme.text.bright,
     marginBottom: 20,
   },
   header: {
@@ -261,6 +271,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   actionButton: {
+    position: 'relative',
     padding: 5,
     marginLeft: 15,
   },
@@ -273,7 +284,6 @@ const styles = StyleSheet.create({
     height: 500,
     objectFit: 'contain',
     borderRadius: 15,
-    backgroundColor: ColorsTheme.white,
   },
   infoContainer: {
     padding: 20,
@@ -281,12 +291,10 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: ColorsTheme.text.main,
     marginBottom: 5,
   },
   brand: {
     fontSize: 16,
-    color: ColorsTheme.text.bright,
     marginBottom: 20,
   },
   detailsContainer: {
@@ -297,16 +305,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   detailLabel: {
     fontSize: 16,
-    color: ColorsTheme.text.bright,
   },
   detailValue: {
     fontSize: 16,
     fontWeight: '500',
-    color: ColorsTheme.text.main,
   },
   colorContainer: {
     flexDirection: 'row',
@@ -328,7 +333,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F97A5C',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 15,
@@ -336,7 +340,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   editButtonText: {
-    color: '#fff',
     fontWeight: 'bold',
     marginLeft: 5,
   },
@@ -344,7 +347,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: ColorsTheme.secondary.main,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 15,
@@ -352,12 +354,10 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   outfitButtonText: {
-    color: '#fff',
     fontWeight: 'bold',
     marginLeft: 5,
   },
   button: {
-    backgroundColor: ColorsTheme.primary.main,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
@@ -382,20 +382,17 @@ const styles = StyleSheet.create({
   metadataText: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#333',
   },
   matchButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 15,
     marginTop: 20,
   },
   matchButtonText: {
-    color: '#555',
     fontWeight: '500',
   },
   matchButtonIcon: {

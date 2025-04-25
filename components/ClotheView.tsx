@@ -9,9 +9,13 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/constants/Supabase";
 import { ColorsTheme } from "@/constants/Colors";
+import { isDressMatch, isPerfectMatch, isSimilarMatch } from "@/services/matchingService";
+import { useTheme } from "@/contexts/ThemeContext";
+import { getThemeColors } from "@/constants/Colors";
 
 // Définir les types de matching
 export enum MatchType {
+  DRESS_MATCH = 'dress_match',   // Vert - Tout match ou tout sauf la coupe
   PERFECT = 'perfect',   // Vert - Tout match ou tout sauf la coupe
   SIMILAR = 'similar',   // Orange - Au moins couleur, subtype et matière
   NONE = 'none'          // Rouge - Pas de concordance
@@ -38,6 +42,9 @@ export default function ClotheView({
 }: ClotheViewProps) {
     const { user } = useAuth();
     const [matchType, setMatchType] = useState<MatchType>(MatchType.NONE);
+    const { isDarkMode } = useTheme();
+    const colors = getThemeColors(isDarkMode);
+
     useEffect(() => {
       if (showMatchStatus && user) {
         checkMatching();
@@ -71,17 +78,12 @@ export default function ClotheView({
         const similarMatches: ClothingItem[] = [];
         for (const item of otherItems) {
           // Vérifier les correspondances parfaites
-          const perfectMatch = 
-            item.color === clothingItem.color &&
-            item.subtype === clothingItem.subtype &&
-            (item.material === clothingItem.material || !clothingItem.material) &&
-            (item.pattern === clothingItem.pattern || !clothingItem.pattern) &&
-            (item.brand === clothingItem.brand || !clothingItem.brand);
+          if (isDressMatch(item, clothingItem)) {
+            return setMatchType(MatchType.DRESS_MATCH);
+          }
+          const perfectMatch = isPerfectMatch(item, clothingItem);
           // Vérifier les correspondances similaires (au moins couleur, subtype et matière)
-          const similarMatch = 
-            item.color === clothingItem.color &&
-            item.subtype === clothingItem.subtype &&
-            (item.material === clothingItem.material || !clothingItem.material);
+          const similarMatch = isSimilarMatch(item, clothingItem);
           
           if (perfectMatch) {
             perfectMatches.push(item);
@@ -108,24 +110,25 @@ export default function ClotheView({
     const getBackgroundStyle = () => {
       // Si le composant est sélectionnable et qu'il est sélectionné
       if (selectable && selected) {
-        return { backgroundColor: '#E7F5FF' }; // Bleu clair pour indiquer la sélection
+        return { borderColor: colors.primary.main }; // Couleur primaire pour indiquer la sélection
       }
       
       // Sinon, si on doit afficher le statut de correspondance
       if (showMatchStatus) {
         switch (matchType) {
           case MatchType.PERFECT:
-            return { backgroundColor: ColorsTheme.match.lighter }; // Vert clair
+          case MatchType.DRESS_MATCH:
+            return { backgroundColor: colors.match.lighter }; // Vert clair
           case MatchType.SIMILAR:
-            return { backgroundColor: ColorsTheme.similar.lighter }; // Orange clair
+            return { backgroundColor: colors.similar.lighter }; // Orange clair
           case MatchType.NONE:
           default:
-            return { backgroundColor: ColorsTheme.gray }; // Rouge clair
+            return { backgroundColor: colors.background.deep }; // Couleur de fond appropriée
         }
       }
       
       // Par défaut
-      return { backgroundColor: ColorsTheme.gray };
+      return { backgroundColor: colors.background.deep };
     };
 
     const handlePress = () => {
@@ -155,26 +158,33 @@ export default function ClotheView({
             >
               <Image source={{ uri: clothingItem.image_url }} style={styles.clothingImage} />
               <View style={styles.clothingInfo}>
-                <Text style={styles.clothingName}>{clothingItem.name}</Text>
-                <Text style={styles.clothingType}>
+                <Text style={[styles.clothingName, { color: colors.text.main }]}>{clothingItem.name}</Text>
+                <Text style={[styles.clothingType, { color: colors.text.light }]}>
                   {types[clothingItem.type]} - {subtypesByType[clothingItem.type][clothingItem.subtype]}
                 </Text>
               </View>
               <View style={styles.rightContainer}>
-                <Ionicons name="chevron-forward" size={20} color="#999" />
+                <Ionicons name="chevron-forward" size={20} color={colors.text.light} />
               </View>
+              {matchType === MatchType.DRESS_MATCH && (
+                <View style={styles.dressMatch}>
+                  <Image source={require('@/assets/images/dress-match.png')} style={styles.dressMatchImage} />
+                </View>
+              )}
             </TouchableOpacity>
     );
 }
 
 const styles = StyleSheet.create({
     clothingItem: {
+        position: 'relative',
         flexDirection: 'row',
         alignItems: 'center',
         padding: 10,
         borderRadius: 10,
-        backgroundColor: '#f9f9f9',
         marginBottom: 10,
+        borderWidth: 2,
+        borderColor: 'transparent'
       },
       clothingImage: {
         width: 60,
@@ -188,11 +198,9 @@ const styles = StyleSheet.create({
       clothingName: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#333',
       },
       clothingType: {
         fontSize: 14,
-        color: '#999',
         marginTop: 2,
       },
       clothingBrand: {
@@ -223,5 +231,15 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 10,
-      }
+      },
+      dressMatch: {
+        position: 'absolute',
+        top: 5,
+        left: 5,
+      },
+      dressMatchImage: {
+        width: 25,
+        height: 25,
+        objectFit: 'contain',
+      },
 });

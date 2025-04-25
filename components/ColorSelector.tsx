@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/Clothes';
 import ColorDot from './ColorDot';
+import MultiColorDisplay from './MultiColorDisplay';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
 
 interface ColorSelectorProps {
   selectedColor: string | null;
@@ -11,11 +14,24 @@ interface ColorSelectorProps {
 
 const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSelect }) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [selectedColors, setSelectedColors] = useState<string[]>([]);
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
   
-  // Trouver l'objet couleur correspondant pour l'affichage
-  const selectedColorObject = COLORS.find(c => c.id === selectedColor);
+  // Initialiser les couleurs sélectionnées au chargement du composant
+  useEffect(() => {
+    if (selectedColor) {
+      setSelectedColors(selectedColor.split(', '));
+    } else {
+      setSelectedColors([]);
+    }
+  }, [selectedColor]);
 
   const openModal = () => {
+    // Réinitialiser la sélection temporaire quand on ouvre le modal
+    if (selectedColor) {
+      setSelectedColors(selectedColor.split(', '));
+    }
     setModalVisible(true);
   };
 
@@ -23,24 +39,64 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSel
     setModalVisible(false);
   };
 
-  const selectColor = (colorId: string) => {
-    onColorSelect(colorId);
+  const toggleColorSelection = (colorId: string) => {
+    setSelectedColors(prevSelected => {
+      if (prevSelected.includes(colorId)) {
+        return prevSelected.filter(id => id !== colorId);
+      } else {
+        return [...prevSelected, colorId];
+      }
+    });
+  };
+
+  const confirmSelection = () => {
+    if (selectedColors.length > 0) {
+      onColorSelect(selectedColors.join(', '));
+    } else {
+      onColorSelect('');
+    }
     closeModal();
+  };
+
+  // Récupérer les objets de couleur pour l'affichage
+  const getSelectedColorObjects = () => {
+    if (!selectedColor) return [];
+    const colorIds = selectedColor.split(', ');
+    return colorIds.map(id => COLORS.find(c => c.id === id)).filter(Boolean);
+  };
+
+  const selectedColorObjects = getSelectedColorObjects();
+
+  // Préparation du texte d'affichage
+  const getDisplayText = () => {
+    if (!selectedColor || selectedColorObjects.length === 0) {
+      return "Sélectionner une couleur";
+    }
+    
+    if (selectedColorObjects.length === 1) {
+      return selectedColorObjects[0]?.name;
+    }
+    
+    if (selectedColorObjects.length === 2) {
+      return `${selectedColorObjects[0]?.name}, ${selectedColorObjects[1]?.name}`;
+    }
+    
+    return `${selectedColorObjects[0]?.name}, ${selectedColorObjects[1]?.name} + ${selectedColorObjects.length - 2}`;
   };
 
   const renderColorItem = ({ item }: { item: typeof COLORS[0] }) => (
     <TouchableOpacity
-      style={styles.colorItem}
-      onPress={() => selectColor(item.id)}
+      style={[styles.colorItem, { borderBottomColor: colors.text.lighter }]}
+      onPress={() => toggleColorSelection(item.id)}
     >
       <View style={styles.colorItemContent}>
-        <ColorDot colorValue={item.value} />
-        <Text style={styles.colorName}>
+        <ColorDot size={45} colorValue={item.value} />
+        <Text style={[styles.colorName, { color: colors.text.main }]}>
           {item.name}
         </Text>
       </View>
-      {item.id === selectedColor && (
-        <Ionicons name="checkmark" size={18} color="#F97A5C" />
+      {selectedColors.includes(item.id) && (
+        <Ionicons name="checkmark" size={18} color={colors.primary.main} />
       )}
     </TouchableOpacity>
   );
@@ -48,37 +104,12 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSel
   return (
     <View>
       <TouchableOpacity 
-        style={styles.colorSelector} 
+        style={[styles.colorSelector, { backgroundColor: colors.gray }]} 
         onPress={openModal}
       >
-        <View style={styles.colorSelectorContent}>
-          {selectedColorObject && (
-            <View 
-              style={[
-                styles.selectedColorCircle, 
-                { 
-                  backgroundColor: selectedColorObject.value === 'linear-gradient' 
-                    ? 'transparent' 
-                    : selectedColorObject.value,
-                }
-              ]}
-            >
-              {selectedColorObject.value === 'linear-gradient' && (
-                <View style={styles.multicolorCircleSmall}>
-                  <View style={[styles.multiColorSegmentSmall, { backgroundColor: '#FF0000', top: 0, left: 0 }]} />
-                  <View style={[styles.multiColorSegmentSmall, { backgroundColor: '#00FF00', top: 0, right: 0 }]} />
-                  <View style={[styles.multiColorSegmentSmall, { backgroundColor: '#0000FF', bottom: 0, left: 0 }]} />
-                  <View style={[styles.multiColorSegmentSmall, { backgroundColor: '#FFFF00', bottom: 0, right: 0 }]} />
-                </View>
-              )}
-            </View>
-          )}
-          <Text style={styles.colorSelectorText}>
-            {selectedColorObject?.name || "Sélectionner une couleur"}
-          </Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color="#999" />
-      </TouchableOpacity>
+        <MultiColorDisplay colorString={selectedColor} />
+        <Ionicons name="chevron-forward" size={24} color={colors.text.light} />
+        </TouchableOpacity>
 
       <Modal
         visible={modalVisible}
@@ -86,12 +117,12 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSel
         transparent={false}
         onRequestClose={closeModal}
       >
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: colors.background.main }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: colors.text.lighter }]}>
             <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={colors.text.main} />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Sélectionner une couleur</Text>
+            <Text style={[styles.modalTitle, { color: colors.text.main }]}>Sélectionner des couleurs</Text>
             <View style={{ width: 24 }} />
           </View>
           
@@ -101,6 +132,25 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSel
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.colorList}
           />
+
+          <View style={[styles.confirmButtonContainer, { 
+            borderTopColor: colors.text.lighter, 
+            backgroundColor: colors.background.main 
+          }]}>
+            <TouchableOpacity 
+              style={[
+                styles.confirmButton, 
+                { backgroundColor: colors.primary.main },
+                selectedColors.length === 0 && { opacity: 0.5 }
+              ]}
+              onPress={confirmSelection}
+              disabled={selectedColors.length === 0}
+            >
+              <Text style={[styles.confirmButtonText, { color: colors.text.bright }]}>
+                Confirmer ({selectedColors.length} sélectionnée{selectedColors.length > 1 ? 's' : ''})
+              </Text>
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
       </Modal>
     </View>
@@ -112,7 +162,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 12,
     marginBottom: 5,
@@ -121,21 +170,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  colorCirclesContainer: {
+    flexDirection: 'row',
+    marginRight: 10,
+    alignItems: 'center',
+  },
   selectedColorCircle: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#ddd',
-    marginRight: 10,
   },
   colorSelectorText: {
     fontSize: 16,
-    color: '#333',
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -144,7 +195,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   closeButton: {
     padding: 5,
@@ -152,10 +202,10 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
   },
   colorList: {
-    padding: 15,
+    paddingVertical: 15,
+    paddingBottom: 80, // Espace pour le bouton de confirmation
   },
   colorItem: {
     flexDirection: 'row',
@@ -163,30 +213,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   colorItemContent: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  colorCircle: {
-    width: 45,
-    height: 45,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginRight: 12,
+    marginLeft: 15,
   },
   colorName: {
-    fontSize: 16,
-    color: '#333',
-  },
-  multicolorCircle: {
-    width: 45,
-    height: 45,
-    borderRadius: 22,
-    overflow: 'hidden',
-    position: 'relative',
+    fontSize: 18,
   },
   multiColorSegment: {
     position: 'absolute',
@@ -204,6 +238,23 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '50%',
     height: '50%',
+  },
+  confirmButtonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 15,
+    borderTopWidth: 1,
+  },
+  confirmButton: {
+    borderRadius: 8,
+    padding: 15,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

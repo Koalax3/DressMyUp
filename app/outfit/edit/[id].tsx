@@ -11,20 +11,34 @@ import * as StorageService from '@/services/storageService';
 import * as ClothingService from '@/services/clothingService';
 import { occasions } from '@/constants/Outfits';
 import GenderSelector from '@/components/GenderSelector';
+import DraggableClothingList from '@/components/DraggableClothingList';
+import { updateClothesPositions } from '@/services/clotheOutfitsService';
+import GenericSelector from '@/components/GenericSelector';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
+import SeasonSelector from '@/components/SeasonSelector';
+import Toast from 'react-native-toast-message';
+
+// Type pour les vêtements avec position
+type ClothingWithPosition = ClothingItem & { position?: number };
+type Season = 'all' | 'spring' | 'summer' | 'fall' | 'winter';
 
 export default function EditOutfitScreen() {
   const { user } = useAuth();
   const params = useLocalSearchParams();
   const outfitId = params.id as string;
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [season, setSeason] = useState('all');
+  const [season, setSeason] = useState<Season>('all');
   const [occasion, setOccasion] = useState('casual');
   const [isPublic, setIsPublic] = useState(true);
   const [gender, setGender] = useState('unisex');
   const [clothes, setClothes] = useState<ClothingItem[]>([]);
-  const [selectedClothes, setSelectedClothes] = useState<string[]>([]);
+  const [selectedClothesIds, setSelectedClothesIds] = useState<string[]>([]);
+  const [selectedClothesWithPositions, setSelectedClothesWithPositions] = useState<ClothingWithPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [outfitImage, setOutfitImage] = useState<string | null>(null);
@@ -38,12 +52,26 @@ export default function EditOutfitScreen() {
     }
   }, [outfitId, user]);
 
+  // Mettre à jour selectedClothesWithPositions quand selectedClothesIds ou clothes changent
+  useEffect(() => {
+    if (selectedClothesIds.length > 0 && clothes.length > 0) {
+      const clothesWithPositions = selectedClothesIds.map((id, index) => {
+        const clotheItem = clothes.find(c => c.id === id);
+        return clotheItem ? { ...clotheItem, position: index } : null;
+      }).filter(Boolean) as ClothingWithPosition[];
+      
+      setSelectedClothesWithPositions(clothesWithPositions);
+    } else {
+      setSelectedClothesWithPositions([]);
+    }
+  }, [selectedClothesIds, clothes]);
+
   useFocusEffect(
     React.useCallback(() => {
       if (user) {
         // Ajouter un vêtement spécifique à la sélection
         if (params.selectItem) {
-          setSelectedClothes(prev => 
+          setSelectedClothesIds(prev => 
             prev.includes(params.selectItem as string) 
               ? prev 
               : [...prev, params.selectItem as string]
@@ -54,12 +82,12 @@ export default function EditOutfitScreen() {
         if (params.selectedClothes && params.returnFromSelect === 'true') {
           // Récupérer les vêtements sélectionnés
           const selectedIds = (params.selectedClothes as string).split(',').filter(id => id !== '');
-          setSelectedClothes(selectedIds);
+          setSelectedClothesIds(selectedIds);
           
           // Récupérer les autres informations du formulaire
           if (params.formName) setName(params.formName as string);
           if (params.formDescription) setDescription(params.formDescription as string);
-          if (params.formSeason) setSeason(params.formSeason as string);
+          if (params.formSeason) setSeason(params.formSeason as Season);
           if (params.formOccasion) setOccasion(params.formOccasion as string);
           if (params.formIsPublic) setIsPublic(params.formIsPublic === 'true');
           if (params.formGender) setGender(params.formGender as string);
@@ -77,7 +105,10 @@ export default function EditOutfitScreen() {
       const outfitDetails = await OutfitService.fetchOutfitDetails(outfitId);
       
       if (!outfitDetails || outfitDetails.user_id !== user?.id) {
-        Alert.alert("Erreur", "Vous n'êtes pas autorisé à modifier cette tenue");
+        Toast.show({
+          type: 'error',
+          text1: "Vous n'êtes pas autorisé à modifier cette tenue"
+        });
         router.back();
         return;
       }
@@ -85,7 +116,7 @@ export default function EditOutfitScreen() {
       // Remplir le formulaire avec les données existantes
       setName(outfitDetails.name);
       setDescription(outfitDetails.description || '');
-      setSeason(outfitDetails.season || 'all');
+      setSeason((outfitDetails.season || 'all') as Season);
       setOccasion(outfitDetails.occasion || 'casual');
       setIsPublic(outfitDetails.isPublic !== false);
       setGender(outfitDetails.gender || 'unisex');
@@ -97,12 +128,27 @@ export default function EditOutfitScreen() {
       
       // Récupérer les vêtements associés
       if (outfitDetails.clothes) {
-        const clothingIds = outfitDetails.clothes.map(item => item.id);
-        setSelectedClothes(clothingIds);
+        // Trier les vêtements par position si disponible
+        const sortedClothes = [...outfitDetails.clothes].sort((a: any, b: any) => {
+          const posA = a.position !== undefined ? a.position : 999;
+          const posB = b.position !== undefined ? b.position : 999;
+          return posA - posB;
+        });
+        
+        // Extraire les IDs des vêtements
+        const clothingIds = sortedClothes.map((item: any) => {
+          // L'ID peut être dans clothe_id (pour clothes_outfits) ou directement dans id
+          return item.clothe_id || (item.clothe && item.clothe.id) || item.id;
+        });
+        
+        setSelectedClothesIds(clothingIds);
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des détails de la tenue:', error);
-      Alert.alert('Erreur', 'Impossible de charger les détails de la tenue');
+      Toast.show({
+        type: 'error',
+        text1: 'Impossible de charger les détails de la tenue'
+      });
     } finally {
       setLoading(false);
     }
@@ -116,7 +162,10 @@ export default function EditOutfitScreen() {
       setClothes(clothesData);
     } catch (error) {
       console.error('Erreur lors de la récupération des vêtements:', error);
-      Alert.alert('Erreur', 'Impossible de charger vos vêtements');
+      Toast.show({
+        type: 'error',
+        text1: 'Impossible de charger vos vêtements'
+      });
     }
   };
 
@@ -124,7 +173,7 @@ export default function EditOutfitScreen() {
     router.push({
       pathname: '/wardrobe/select' as any,
       params: { 
-        selectedIds: selectedClothes.join(','),
+        selectedIds: selectedClothesIds.join(','),
         formName: name,
         formDescription: description,
         formSeason: season,
@@ -165,8 +214,11 @@ export default function EditOutfitScreen() {
   const updateOutfit = async () => {
     if (!user || !outfitId) return;
     
-    if (!name || selectedClothes.length === 0) {
-      Alert.alert('Erreur', 'Veuillez donner un nom à votre tenue et sélectionner au moins un vêtement');
+    if (!name || selectedClothesIds.length === 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Veuillez donner un nom à votre tenue et sélectionner au moins un vêtement'
+      });
       return;
     }
 
@@ -200,214 +252,186 @@ export default function EditOutfitScreen() {
       const success = await OutfitService.updateOutfit(outfitId, outfitData);
 
       if (!success) {
-        Alert.alert('Erreur', 'Impossible de mettre à jour la tenue. Veuillez réessayer.');
+        Toast.show({
+          type: 'error',
+          text1: 'Impossible de mettre à jour la tenue. Veuillez réessayer.'
+        });
         return;
       }
 
-      // Étape 3: Mettre à jour les vêtements associés
+      // Étape 3: Mettre à jour les vêtements associés avec leurs positions
+      // On trie les vêtements selon leurs positions dans selectedClothesWithPositions
+      const clothingIdsWithPositions = selectedClothesWithPositions.map(item => ({
+        id: item.id,
+        position: item.position || 0
+      }));
+      
+      // On trie les ids par position
+      const sortedClothingIds = clothingIdsWithPositions
+        .sort((a, b) => (a.position || 0) - (b.position || 0))
+        .map(item => item.id);
+
       const clothesSuccess = await OutfitService.updateOutfitClothes(
         outfitId,
-        selectedClothes
+        sortedClothingIds
       );
 
       if (!clothesSuccess) {
         console.error('Erreur lors de la mise à jour des vêtements associés à la tenue');
       }
 
-      Alert.alert(
-        'Succès',
-        'Tenue mise à jour avec succès!',
-        [{ text: 'OK', onPress: () => {
-          router.push({
-            pathname: '/outfit/[id]',
-            params: { id: outfitId }
-          });
-        }}]
-      );
+      // Mettre à jour les positions
+      const positionsToUpdate = selectedClothesWithPositions.map(item => ({
+        clotheId: item.id,
+        position: item.position || 0
+      }));
+      
+      await updateClothesPositions(outfitId, positionsToUpdate);
+
+      Toast.show({
+        type: 'success',
+        text1: 'Tenue mise à jour avec succès!'
+      });
+      
+      router.back();
     } catch (error) {
       console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Une erreur s\'est produite. Veuillez réessayer.');
+      Toast.show({
+        type: 'error',
+        text1: 'Une erreur s\'est produite. Veuillez réessayer.'
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const selectedClothesItems = clothes.filter(item => selectedClothes.includes(item.id));
+  const selectedClothesItems = clothes.filter(item => selectedClothesIds.includes(item.id));
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#F97A5C" />
-          <Text style={{ marginTop: 10 }}>Chargement de la tenue...</Text>
+          <ActivityIndicator size="large" color={colors.primary.main} />
+          <Text style={{ marginTop: 10, color: colors.text.main }}>Chargement de la tenue...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
+      <View style={[styles.header, { borderBottomColor: isDarkMode ? colors.background.dark : '#f0f0f0' }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={colors.text.main} />
         </TouchableOpacity>
-        <Text style={styles.title}>Modifier la tenue</Text>
+        <Text style={[styles.title, { color: colors.text.main }]}>Modifier la tenue</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.formSection}>
           {/* Section pour l'image de la tenue */}
-          <Text style={[styles.sectionTitle, { marginTop: 20 }]}>Image de la tenue</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 20, color: colors.text.main }]}>Image de la tenue</Text>
           <ImagePicker 
             imageUri={outfitImage}
             onImageSelected={(uri) => setOutfitImage(uri)}
             onImageRemoved={() => setOutfitImage(null)}
             uploading={uploadingImage}
           />
-          <Text style={styles.sectionTitle}>Informations</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Informations</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: isDarkMode ? colors.background.deep : '#f5f5f5',
+              color: colors.text.main 
+            }]}
             placeholder="Nom de la tenue*"
+            placeholderTextColor={colors.text.light}
             value={name}
             onChangeText={setName}
           />
           
           {/* Description de la tenue */}
-          <Text style={styles.sectionTitle}>Description</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Description</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
+            style={[
+              styles.input, 
+              styles.textArea, 
+              { 
+                backgroundColor: isDarkMode ? colors.background.deep : '#f5f5f5',
+                color: colors.text.main 
+              }
+            ]}
             multiline
             numberOfLines={4}
             value={description}
             onChangeText={setDescription}
             placeholder="Décrivez votre tenue (optionnel)"
+            placeholderTextColor={colors.text.light}
           />
 
           {/* Saison */}
-          <Text style={styles.sectionTitle}>Saison</Text>
-          <View style={styles.seasonContainer}>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'all' && styles.seasonButtonActive]}
-              onPress={() => setSeason('all')}
-            >
-              <Ionicons name="calendar-outline" size={18} color={season === 'all' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'all' && styles.seasonButtonTextActive]}>Toutes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'spring' && styles.seasonButtonActive]}
-              onPress={() => setSeason('spring')}
-            >
-              <Ionicons name="flower-outline" size={18} color={season === 'spring' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'spring' && styles.seasonButtonTextActive]}>Printemps</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'summer' && styles.seasonButtonActive]}
-              onPress={() => setSeason('summer')}
-            >
-              <Ionicons name="sunny-outline" size={18} color={season === 'summer' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'summer' && styles.seasonButtonTextActive]}>Été</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'fall' && styles.seasonButtonActive]}
-              onPress={() => setSeason('fall')}
-            >
-              <Ionicons name="leaf-outline" size={18} color={season === 'fall' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'fall' && styles.seasonButtonTextActive]}>Automne</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.seasonButton, season === 'winter' && styles.seasonButtonActive]}
-              onPress={() => setSeason('winter')}
-            >
-              <Ionicons name="snow-outline" size={18} color={season === 'winter' ? "#fff" : "#666"} />
-              <Text style={[styles.seasonButtonText, season === 'winter' && styles.seasonButtonTextActive]}>Hiver</Text>
-            </TouchableOpacity>
-          </View>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Saison</Text>
+          <SeasonSelector 
+            selectedSeason={season} 
+            onSelectSeason={setSeason} 
+          />
 
           {/* Occasion */}
-          <Text style={styles.sectionTitle}>Occasion</Text>
-          <View style={styles.occasionContainer}>
-            {Object.entries(occasions).map(([key, value]) => (
-              <TouchableOpacity
-                key={key}
-                style={[styles.occasionButton, occasion === key && styles.occasionButtonActive]}
-                onPress={() => setOccasion(key)}
-              >
-                <Text style={[styles.occasionButtonText, occasion === key && styles.occasionButtonTextActive]}>{value}</Text> 
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Visibilité */}
-          <Text style={styles.sectionTitle}>Visibilité</Text>
-          <View style={styles.visibilityContainer}>
-            <TouchableOpacity
-              style={[styles.visibilityButton, isPublic && styles.visibilityButtonActive]}
-              onPress={() => setIsPublic(true)}
-            >
-              <Ionicons name="eye-outline" size={18} color={isPublic ? "#fff" : "#666"} />
-              <Text style={[styles.visibilityButtonText, isPublic && styles.visibilityButtonTextActive]}>Public</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.visibilityButton, !isPublic && styles.visibilityButtonActive]}
-              onPress={() => setIsPublic(false)}
-            >
-              <Ionicons name="eye-off-outline" size={18} color={!isPublic ? "#fff" : "#666"} />
-              <Text style={[styles.visibilityButtonText, !isPublic && styles.visibilityButtonTextActive]}>Privé</Text>
-            </TouchableOpacity>
+          <View style={{ marginBottom: 20 }}>
+            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Style</Text>
+            <GenericSelector
+              options={occasions}
+              selectedOption={occasion}
+              onOptionSelect={(value) => setOccasion(value as string)}
+              title="Sélectionner un style"
+              placeholder="Choisir un style"
+            />
           </View>
 
           {/* Genre */}
-          <Text style={styles.sectionTitle}>Genre</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Genre</Text>
           <GenderSelector 
             selectedGender={gender}
             onGenderChange={setGender}
           />
         </View>
 
-        <View style={styles.selectedSection}>
-          <Text style={styles.sectionTitle}>Vêtements sélectionnés ({selectedClothes.length})</Text>
-          {selectedClothes.length === 0 ? (
-            <View style={styles.emptySelection}>
-              <Text style={styles.emptyText}>Aucun vêtement sélectionné</Text>
-              <Text style={styles.emptySubtext}>Sélectionnez des vêtements en appuyant sur le bouton ci-dessous</Text>
-            </View>
-          ) : (
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.selectedClothesContainer}
-            >
-              {selectedClothesItems.map(item => (
-                <TouchableOpacity 
-                  key={item.id} 
-                  style={styles.selectedClothingItem}
-                  onPress={() => {
-                    setSelectedClothes(prev => prev.filter(id => id !== item.id));
-                  }}
-                >
-                  <Image source={{ uri: item.image_url }} style={styles.selectedClothingImage} />
-                  <View style={styles.removeIcon}>
-                    <Ionicons name="close-circle" size={20} color="#F97A5C" />
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-          
-          <TouchableOpacity 
-            style={styles.wardrobeButton}
-            onPress={navigateToWardrobeSelect}
-          >
-            <Ionicons name="shirt-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.wardrobeButtonText}>
-              {selectedClothes.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Vêtements</Text>
+          <View style={styles.draggableListContainer}>
+            <DraggableClothingList
+              items={selectedClothesWithPositions}
+              onDragEnd={(data) => {
+                setSelectedClothesWithPositions(data);
+                setSelectedClothesIds(data.map(item => item.id));
+              }}
+              onRemoveItem={(id) => {
+                setSelectedClothesWithPositions(prev => prev.filter(item => item.id !== id));
+                setSelectedClothesIds(prev => prev.filter(itemId => itemId !== id));
+              }}
+            />
+          </View>
         </View>
 
         <TouchableOpacity 
-          style={styles.saveButton}
+          style={[
+            styles.wardrobeButton,
+            { backgroundColor: colors.secondary.main }
+          ]}
+          onPress={navigateToWardrobeSelect}
+        >
+          <Ionicons name="shirt-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
+          <Text style={styles.wardrobeButtonText}>
+            {selectedClothesIds.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[
+            styles.saveButton,
+            { backgroundColor: colors.primary.main },
+            saving && { opacity: 0.7 }
+          ]}
           onPress={updateOutfit}
           disabled={saving}
         >
@@ -425,7 +449,6 @@ export default function EditOutfitScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -434,7 +457,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   backButton: {
     padding: 5,
@@ -442,11 +464,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
   },
   content: {
     flex: 1,
     padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   formSection: {
     marginBottom: 20,
@@ -454,11 +480,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
     marginBottom: 15,
   },
   input: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -468,54 +492,42 @@ const styles = StyleSheet.create({
     height: 80,
     textAlignVertical: 'top',
   },
-  selectedSection: {
+  section: {
     marginBottom: 20,
   },
-  emptySelection: {
-    backgroundColor: '#f9f9f9',
-    padding: 20,
-    borderRadius: 8,
+  visibilityContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+  },
+  visibilityButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 20,
+    marginHorizontal: 5,
   },
-  emptyText: {
+  visibilityButtonActive: {
+    borderWidth: 0,
+  },
+  visibilityButtonText: {
+    marginLeft: 5,
     fontSize: 16,
+  },
+  visibilityButtonTextActive: {
     fontWeight: 'bold',
-    color: '#666',
   },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999',
-    marginTop: 5,
-    textAlign: 'center',
-  },
-  selectedClothesContainer: {
-    paddingVertical: 10,
-    marginBottom: 15,
-  },
-  selectedClothingItem: {
-    marginRight: 15,
-    position: 'relative',
-  },
-  selectedClothingImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
-  },
-  removeIcon: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#fff',
-    borderRadius: 10,
+  draggableListContainer: {
+    marginBottom: 20,
   },
   wardrobeButton: {
-    backgroundColor: '#F97A5C',
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 15,
   },
   wardrobeButtonText: {
     color: '#fff',
@@ -523,10 +535,10 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   saveButton: {
-    backgroundColor: '#F97A5C',
-    borderRadius: 8,
-    padding: 15,
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: 15,
+    borderRadius: 8,
     marginTop: 10,
     marginBottom: 30,
   },
@@ -534,90 +546,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  seasonContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  seasonButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f2f2f2',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-    width: '48%',
-    marginHorizontal: '1%',
-  },
-  seasonButtonActive: {
-    backgroundColor: '#F97A5C',
-  },
-  seasonButtonText: {
-    color: '#666',
-    fontSize: 14,
-    marginLeft: 6,
-  },
-  seasonButtonTextActive: {
-    color: '#fff',
-  },
-  occasionContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  occasionButton: {
-    backgroundColor: '#f2f2f2',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 10,
-    width: '48%',
-    alignItems: 'center',
-    marginHorizontal: '1%',
-  },
-  occasionButtonActive: {
-    backgroundColor: '#F97A5C'
-  },
-  occasionButtonText: {
-    color: '#666',
-    fontSize: 14,
-  },
-  occasionButtonTextActive: {
-    color: '#fff',
-  },
-  visibilityContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  visibilityButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f2f2f2',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    width: '48%',
-    marginHorizontal: '1%',
-  },
-  visibilityButtonActive: {
-    backgroundColor: '#F97A5C',
-  },
-  visibilityButtonText: {
-    color: '#666',
-    fontSize: 14,
-    marginLeft: 6,
-  },
-  visibilityButtonTextActive: {
-    color: '#fff',
   },
 }); 

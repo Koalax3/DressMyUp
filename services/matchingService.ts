@@ -1,6 +1,37 @@
 import { ClothingItem, Outfit } from '@/types';
-import { MatchType } from '@/components/ClotheView';
 
+export const colorMatch = (item: ClothingItem, currentItem: ClothingItem): boolean => {
+  const itemColors = item.color.split(',').map(c => c.trim());
+  const currentColors = currentItem.color.split(',').map(c => c.trim());
+
+  for (const color of itemColors) {
+    if (!currentColors.includes(color)) {
+      return false;
+    }
+  }
+  return itemColors.length === currentColors.length;
+}
+
+export const isDressMatch = (item: ClothingItem, currentItem: ClothingItem): boolean => {
+  return !!(colorMatch(item, currentItem) &&
+    item.reference && item.reference === currentItem.reference &&
+    item.subtype === currentItem.subtype);
+}
+
+export const isPerfectMatch = (item: ClothingItem, currentItem: ClothingItem): boolean => {
+  return !!(colorMatch(item, currentItem) &&
+    item.subtype === currentItem.subtype &&
+    (item.material === currentItem.material) &&
+    (item.pattern === currentItem.pattern) &&
+    (item.brand === currentItem.brand));
+}
+
+export const isSimilarMatch = (item: ClothingItem, currentItem: ClothingItem): boolean => {
+  return colorMatch(item, currentItem) &&
+    item.subtype === currentItem.subtype &&
+    ((item.material === currentItem.material) ||
+    (item.pattern === currentItem.pattern));
+}
 export const calculateMatchingPercentage = (
   outfit: Outfit,
   userWardrobe: ClothingItem[]
@@ -11,45 +42,28 @@ export const calculateMatchingPercentage = (
 
   const totalItems = outfit.clothes.length;
   let totalPercentage = 0;
+  const dressMatches = [];
+  const perfectMatches = [];
+  const similarMatches = [];
 
   outfit.clothes.forEach(item => {
     if (!item) return;
 
     const matchingItem = item.clothe || item;
-    const matchingItems = userWardrobe.filter(wardrobeItem => {
+    userWardrobe.forEach(wardrobeItem => {
       if (!wardrobeItem) return false;
-
-      // Vérifier les correspondances parfaites
-      const perfectMatch = 
-        wardrobeItem.color === matchingItem.color &&
-        wardrobeItem.subtype === matchingItem.subtype &&
-        (wardrobeItem.material === matchingItem.material || !matchingItem.material) &&
-        (wardrobeItem.pattern === matchingItem.pattern || !matchingItem.pattern) &&
-        (wardrobeItem.brand === matchingItem.brand || !matchingItem.brand);
-
-      // Vérifier les correspondances similaires
-      const similarMatch = 
-        wardrobeItem.color === matchingItem.color &&
-        wardrobeItem.subtype === matchingItem.subtype &&
-        (wardrobeItem.material === matchingItem.material || !matchingItem.material);
-
-      return perfectMatch || similarMatch;
+      if (isDressMatch(matchingItem, wardrobeItem)) {
+        dressMatches.push(wardrobeItem);
+      } else if (isPerfectMatch(matchingItem, wardrobeItem)) {
+        perfectMatches.push(wardrobeItem);
+      } else if (isSimilarMatch(matchingItem, wardrobeItem)) {
+        similarMatches.push(wardrobeItem);
+      }
     });
-
-    if (matchingItems.length > 0) {
-      // Si c'est une correspondance parfaite, ajouter 100%
-      // Si c'est une correspondance similaire, ajouter 50%
-      const isPerfectMatch = matchingItems.some(match => 
-        match.color === matchingItem.color &&
-        match.subtype === matchingItem.subtype &&
-        (match.material === matchingItem.material || !matchingItem.material) &&
-        (match.pattern === matchingItem.pattern || !matchingItem.pattern) &&
-        (match.brand === matchingItem.brand || !matchingItem.brand)
-      );
-
-      totalPercentage += isPerfectMatch ? 100 : 50;
-    }
   });
+  totalPercentage += dressMatches.length * 100;
+  totalPercentage += perfectMatches.length * 80;
+  totalPercentage += similarMatches.length * 50;
 
   return Math.round(totalPercentage / totalItems);
 }; 

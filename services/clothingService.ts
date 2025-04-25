@@ -2,7 +2,7 @@ import { supabase } from '../constants/Supabase';
 import { ClothingItem, ClothingSubType, ClothingType } from '../types';
 import { decode } from 'base64-arraybuffer';
 import { deleteClotheOutfit } from './clotheOutfitsService';
-import { fetch, FilterConstraint } from './SupabaseService';
+import { fetch, FilterConstraint } from './supabaseService';
 
 // Type pour la création de vêtement
 export type CreateClothingData = {
@@ -15,6 +15,7 @@ export type CreateClothingData = {
   pattern?: string | null;
   image_url: string;
   material?: string;
+  reference?: string;
 };
 const TABLE_NAME = 'clothes';
 // Création d'un vêtement
@@ -34,6 +35,7 @@ export const createClothing = async (userId: string, clothingData: CreateClothin
           pattern: clothingData.pattern,
           material: clothingData.material,
           image_url: clothingData.image_url,
+          reference: clothingData.reference,
           created_at: new Date().toISOString(),
         },
       ])
@@ -76,22 +78,31 @@ export const fetchUserClothes = async (userId: string, options?: FilterConstrain
 
 /**
  * Récupère un vêtement par son ID
+ * Cette fonction peut récupérer un vêtement de n'importe quel utilisateur
  */
-export const getClothingById = async (id: string, userId: string): Promise<ClothingItem | null> => {
+export const getClothingById = async (id: string): Promise<ClothingItem | null> => {
   try {
     const { data, error } = await supabase
       .from(TABLE_NAME)
-      .select('*')
+      .select(`
+        *,
+        user:user_id (
+          id,
+          username,
+          avatar_url
+        )
+      `)
       .eq('id', id)
       .single();
 
     if (error) {
-      throw new Error(`Erreur lors de la récupération du vêtement: ${error.message}`);
+      console.error('Erreur lors de la récupération du vêtement:', error);
+      return null;
     }
 
     return data;
   } catch (error) {
-    console.error('Erreur:', error);
+    console.error('Erreur lors de la récupération du vêtement:', error);
     return null;
   }
 };
@@ -102,7 +113,7 @@ export const getClothingById = async (id: string, userId: string): Promise<Cloth
 export const deleteClothing = async (id: string, userId: string): Promise<boolean> => {
   try {
     // Récupérer d'abord le vêtement pour obtenir l'URL de l'image
-    const clothing = await getClothingById(id, userId);
+    const clothing = await getClothingById(id);
     
     if (!clothing) {
       throw new Error("Vêtement introuvable ou vous n'êtes pas autorisé à le supprimer");
@@ -160,6 +171,7 @@ export const updateClothing = async (id: string, userId: string, clothingData: P
         pattern: clothingData.pattern,
         material: clothingData.material,
         image_url: clothingData.image_url,
+        reference: clothingData.reference,
       })
       .eq('id', id)
       .eq('user_id', userId);
@@ -267,4 +279,51 @@ export const fetchClothesByType = async (userId: string, type: ClothingItem['typ
   }
 
   return data || [];
+};
+
+export const searchClothingByReference = async (reference: string): Promise<ClothingItem | null> => {
+  try {
+    const { data, error } = await supabase
+      .from(TABLE_NAME)
+      .select('*')
+      .eq('reference', reference);
+
+    if (error) {
+      console.error('Erreur lors de la recherche du vêtement:', error);
+      return null;
+    }
+    if (data.length === 0) {
+      return null;
+    }
+    return data[0];
+  } catch (error) {
+    console.error('Erreur lors de la recherche du vêtement:', error);
+    return null;
+  }
+};
+
+/**
+ * Récupère les vêtements d'un utilisateur spécifique
+ * Utile pour voir les vêtements d'autres utilisateurs
+ */
+export const fetchPublicUserClothes = async (userId: string, options?: FilterConstraint[]): Promise<ClothingItem[]> => {
+  try {
+    const { data, error } = await fetch(
+      TABLE_NAME,
+      [
+        ['eq', 'user_id', userId],
+        ['order', 'created_at', false],
+        ...(options || [])
+      ]
+    );
+
+    if (error) {
+      throw new Error(`Erreur lors de la récupération des vêtements: ${error.message}`);
+    }
+
+    return data || [];
+  } catch (error) {
+    console.error('Erreur lors de la récupération des vêtements publics:', error);
+    return [];
+  }
 }; 

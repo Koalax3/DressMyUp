@@ -82,7 +82,7 @@ export const fetchUserStats = async (userId: string) => {
     const { count: followersCount, error: followersError } = await supabase
       .from('follows')
       .select('*', { count: 'exact', head: true })
-      .eq('following_id', userId);
+      .eq('followed_id', userId);
 
     if (followersError) {
       throw new Error(`Erreur lors de la récupération des abonnés: ${followersError.message}`);
@@ -92,7 +92,7 @@ export const fetchUserStats = async (userId: string) => {
     const { count: followingCount, error: followingError } = await supabase
       .from('follows')
       .select('*', { count: 'exact', head: true })
-      .eq('follower_id', userId);
+      .eq('user_id', userId);
 
     if (followingError) {
       throw new Error(`Erreur lors de la récupération des abonnements: ${followingError.message}`);
@@ -145,8 +145,8 @@ export const fetchFollowing = async (userId: string) => {
 };
 
 // Suivre/Ne plus suivre un utilisateur
-export const toggleFollow = async (followerId: string, followingId: string) => {
-  if (followerId === followingId) {
+export const toggleFollow = async (userId: string, followedId: string) => {
+  if (userId === followedId) {
     throw new Error("Vous ne pouvez pas vous suivre vous-même");
   }
 
@@ -154,8 +154,8 @@ export const toggleFollow = async (followerId: string, followingId: string) => {
   const { data: existingFollow, error: checkError } = await supabase
     .from('follows')
     .select('*')
-    .eq('follower_id', followerId)
-    .eq('following_id', followingId)
+    .eq('user_id', userId)
+    .eq('followed_id', followedId)
     .single();
 
   if (checkError && checkError.code !== 'PGRST116') {
@@ -180,8 +180,8 @@ export const toggleFollow = async (followerId: string, followingId: string) => {
       .from('follows')
       .insert([
         {
-          follower_id: followerId,
-          following_id: followingId,
+          user_id: userId,
+          followed_id: followedId,
           created_at: new Date().toISOString(),
         },
       ]);
@@ -195,12 +195,12 @@ export const toggleFollow = async (followerId: string, followingId: string) => {
 };
 
 // Vérifier si un utilisateur suit un autre utilisateur
-export const checkIfFollowing = async (followerId: string, followingId: string) => {
+export const checkIfFollowing = async (userId: string, followedId: string) => {
   const { data, error } = await supabase
     .from('follows')
     .select('*')
-    .eq('follower_id', followerId)
-    .eq('following_id', followingId)
+    .eq('user_id', userId)
+    .eq('followed_id', followedId)
     .single();
 
   if (error && error.code !== 'PGRST116') {
@@ -208,4 +208,40 @@ export const checkIfFollowing = async (followerId: string, followingId: string) 
   }
 
   return !!data;
+};
+
+// Récupération des données complètes d'un utilisateur (profil, statistiques, tenues)
+export const fetchUserCompleteData = async (userId: string) => {
+  try {
+    // Récupérer le profil de l'utilisateur
+    const userProfile = await fetchUserProfile(userId);
+    
+    // Récupérer les statistiques de l'utilisateur
+    const userStats = await fetchUserStats(userId);
+    
+    // Calculer le nombre total de likes reçus
+    const { data: outfits } = await supabase
+      .from('outfits')
+      .select(`
+        id,
+        likes (id)
+      `)
+      .eq('user_id', userId);
+    
+    // Compter tous les likes reçus par les tenues de l'utilisateur
+    const likesCount = outfits?.reduce((total, outfit) => total + (outfit.likes?.length || 0), 0) || 0;
+    
+    // Retourner les données complètes
+    return {
+      profile: userProfile,
+      stats: {
+        ...userStats,
+        likesCount
+      },
+      isFollowing: false // Par défaut, sera mis à jour dans le composant si nécessaire
+    };
+  } catch (error) {
+    console.error('Erreur lors de la récupération des données utilisateur:', error);
+    throw new Error(`Erreur lors de la récupération des données utilisateur: ${error instanceof Error ? error.message : 'Erreur inconnue'}`);
+  }
 }; 

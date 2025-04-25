@@ -3,11 +3,20 @@ import { MATERIALS } from "@/constants/Materials";
 import { ClothingItem } from "@/types";
 import { router } from "expo-router";
 import { TouchableOpacity, Image, View, Text, StyleSheet } from "react-native";
+import { useTheme } from "@/contexts/ThemeContext";
+import { getThemeColors } from "@/constants/Colors";
 
 export default function ClotheItem({ item }: { item: ClothingItem }) {
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
+  const tag = (color: string, text: string) => (
+    <View style={[styles.tag, { backgroundColor: color }]}>
+      <Text style={[styles.tagText, { color: colors.black }]}>{text}</Text>
+    </View>
+  )
   return (
     <TouchableOpacity 
-      style={styles.clothingItem}
+      style={[styles.clothingItem, { backgroundColor: colors.gray }]}
       onPress={() => router.push(`/clothing/${item.id}`)}
     >
       <Image 
@@ -16,25 +25,13 @@ export default function ClotheItem({ item }: { item: ClothingItem }) {
         resizeMode="cover"
       />
       <View style={styles.clothingInfo}>
-        <Text style={styles.clothingName}>{item.name}</Text>
-        <Text style={styles.clothingBrand}>{item.brand || 'Sans marque'}</Text>
+        <Text style={[styles.clothingName, { color: colors.text.main }]}>{item.name}</Text>
+        <Text style={[styles.clothingBrand, { color: colors.text.light }]}>{item.brand || 'Sans marque'} {item.reference && `- ${item.reference}`}</Text>
         <View style={styles.tagContainer}>
-          <View style={[styles.tag, { backgroundColor: '#FFE0E0' }]}>
-            <Text style={styles.tagText}>{types[item.type]}</Text>
-          </View>
-          <View style={[styles.tag, { backgroundColor: '#E0F0FF' }]}>
-            <Text style={styles.tagText}>{subtypesByType[item.type][item.subtype]}</Text>
-          </View>
-          {item.material && (
-            <View style={[styles.tag, { backgroundColor: '#E0FFE0' }]}>
-              <Text style={styles.tagText}>{MATERIALS[item.material]}</Text>
-            </View>
-          )}
-          {item.pattern && (
-            <View style={[styles.tag, { backgroundColor: '#ede5ff' }]}>
-              <Text style={styles.tagText}>{PATTERNS[item.pattern as keyof typeof PATTERNS]}</Text>
-            </View>
-          )}
+          {tag(colors.tag.red, types[item.type])}
+          {item.subtype && tag(colors.tag.blue, subtypesByType[item.type][item.subtype]!)}
+          {item.material && tag(colors.tag.green, MATERIALS[item.material])}
+          {item.pattern && tag(colors.tag.purple, PATTERNS[item.pattern as keyof typeof PATTERNS])}
         </View>
       </View>
     </TouchableOpacity>
@@ -44,7 +41,6 @@ export default function ClotheItem({ item }: { item: ClothingItem }) {
 const styles = StyleSheet.create({
     clothingItem: {
         flexDirection: 'row',
-        backgroundColor: '#fff',
         borderRadius: 12,
         marginBottom: 15,
         padding: 10,
@@ -68,12 +64,10 @@ const styles = StyleSheet.create({
       clothingName: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#333',
         marginBottom: 4,
       },
       clothingBrand: {
         fontSize: 14,
-        color: '#666',
         marginBottom: 8,
       },
       tagContainer: {
@@ -87,7 +81,6 @@ const styles = StyleSheet.create({
       },
       tagText: {
         fontSize: 12,
-        color: '#333',
       },
 });
 

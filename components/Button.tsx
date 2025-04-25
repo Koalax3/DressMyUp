@@ -1,36 +1,98 @@
-import { Ionicons } from "@expo/vector-icons";
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import React from 'react';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, ViewStyle, TextStyle, StyleProp } from 'react-native';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
 
-export default function Button({ title, onPress, icon, type = 'primary' }: { title?: string, onPress?: () => void, icon?: React.ComponentProps<typeof Ionicons>['name'], type?: 'primary' | 'secondary' }) {
-  return (
-    <TouchableOpacity 
-    style={[styles.addButton, type === 'primary' && styles.primaryButton, type === 'secondary' && styles.secondaryButton]}
-    onPress={onPress}
-  >
-    {icon && <Ionicons name={icon} size={24} color={type === 'primary' ? '#fff' : '#F97A5C'} />}
-    {title && <Text style={styles.title}>{title}</Text>}
-  </TouchableOpacity>
-  );
+type ButtonProps = {
+  title?: string;
+  onPress: () => void;
+  style?: StyleProp<ViewStyle>;
+  textStyle?: StyleProp<TextStyle>;
+  loading?: boolean;
+  disabled?: boolean;
+  variant?: 'primary' | 'secondary' | 'outline';
+  rounded?: boolean;
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
-const styles = StyleSheet.create({
-  addButton: {
-    backgroundColor: '#F97A5C',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryButton: {
-    backgroundColor: '#F97A5C',
-  },
-  secondaryButton: {
-    backgroundColor: '#fff',
-  },
-  title: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
+const Button: React.FC<ButtonProps> = ({
+  title = '',
+  onPress,
+  style,
+  textStyle,
+  loading = false,
+  disabled = false,
+  variant = 'primary',
+  rounded = false,
+  icon,
+}) => {
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
+  const styles = StyleSheet.create({
+    button: {
+      borderRadius: rounded ? 100 : 8,
+      paddingVertical: 12,
+      paddingHorizontal: icon && !title ? 12 : 24,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    buttonDisabled: {
+      opacity: 0.5,
+    },
+    text: {
+      fontSize: 16,
+      fontWeight: '600',
+    },
+  });
+  const getButtonStyle = () => {
+    switch (variant) {
+      case 'secondary':
+        return [styles.button, { backgroundColor: colors.secondary.main }, style];
+      case 'outline':
+        return [
+          styles.button, 
+          { 
+            backgroundColor: 'transparent',
+            borderWidth: 1,
+            borderColor: colors.primary.main
+          }, 
+          style
+        ];
+      case 'primary':
+      default:
+        return [styles.button, { backgroundColor: colors.primary.main }, style];
+    }
+  };
+
+  const getTextStyle = () => {
+    switch (variant) {
+      case 'outline':
+        return [styles.text, { color: colors.primary.main }, textStyle];
+      case 'primary':
+      case 'secondary':
+      default:
+        return [styles.text, { color: colors.white }, textStyle];
+    }
+  };
+
+  return (
+    <TouchableOpacity
+      style={[getButtonStyle(), disabled && styles.buttonDisabled]}
+      onPress={onPress}
+      disabled={disabled || loading}
+      activeOpacity={0.7}
+    >
+      {loading ? (
+        <ActivityIndicator color={variant === 'outline' ? colors.primary.main : colors.white} />
+      ) : (
+        title && <Text style={getTextStyle()}>{title}</Text>
+      )}
+      {icon && <Ionicons name={icon} size={24} color={variant === 'outline' ? colors.primary.main : colors.white} />}
+    </TouchableOpacity>
+  );
+};
+
+
+
+export default Button;

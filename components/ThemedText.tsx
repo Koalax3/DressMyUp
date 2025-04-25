@@ -1,21 +1,27 @@
+import React from 'react';
 import { Text, type TextProps, StyleSheet } from 'react-native';
-
 import { useThemeColor } from '@/hooks/useThemeColor';
+import { ColorsTheme } from '@/constants/Colors';
+
+type ColorCategory = keyof typeof ColorsTheme;
+type ColorVariant<T extends ColorCategory> = keyof typeof ColorsTheme[T];
 
 export type ThemedTextProps = TextProps & {
-  lightColor?: string;
-  darkColor?: string;
+  textColor?: string;
+  textColorName?: ColorCategory;
+  textColorVariant?: string;
   type?: 'default' | 'title' | 'defaultSemiBold' | 'subtitle' | 'link';
 };
 
 export function ThemedText({
   style,
-  lightColor,
-  darkColor,
+  textColor,
+  textColorName = 'text',
+  textColorVariant = 'main',
   type = 'default',
   ...rest
 }: ThemedTextProps) {
-  const color = useThemeColor({ light: lightColor, dark: darkColor }, 'text');
+  const color = textColor || useThemeColor(textColorName as any, textColorVariant as any);
 
   return (
     <Text

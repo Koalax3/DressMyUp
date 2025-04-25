@@ -2,6 +2,8 @@ import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { genders } from '@/constants/Outfits';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
 
 type GenderSelectorProps = {
   selectedGender: string;
@@ -14,32 +16,34 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
   onGenderChange,
   containerStyle
 }) => {
+  const {isDarkMode} = useTheme();
+  const colors = getThemeColors(isDarkMode);
   return (
     <View style={[styles.genderContainer, containerStyle]}>
       <TouchableOpacity
-        style={[styles.genderButton, selectedGender === 'male' && styles.genderButtonActive]}
+        style={[styles.genderButton, { backgroundColor: colors.gray }, selectedGender === 'male' && styles.genderButtonActive]}
         onPress={() => onGenderChange('male')}
       >
-        <Ionicons name="male-outline" size={18} color={selectedGender === 'male' ? "#fff" : "#666"} />
-        <Text style={[styles.genderButtonText, selectedGender === 'male' && styles.genderButtonTextActive]}>
+        <Ionicons name="male-outline" size={18} color={selectedGender === 'male' ? colors.white : colors.text.main} />
+        <Text style={[styles.genderButtonText, { color: colors.text.main }, selectedGender === 'male' && styles.genderButtonTextActive]}>
           {genders['male']}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.genderButton, selectedGender === 'female' && styles.genderButtonActive]}
+        style={[styles.genderButton, { backgroundColor: colors.gray }, selectedGender === 'female' && styles.genderButtonActive]}
         onPress={() => onGenderChange('female')}
       >
-        <Ionicons name="female-outline" size={18} color={selectedGender === 'female' ? "#fff" : "#666"} />
-        <Text style={[styles.genderButtonText, selectedGender === 'female' && styles.genderButtonTextActive]}>
+        <Ionicons name="female-outline" size={18} color={selectedGender === 'female' ? colors.white : colors.text.main} />
+        <Text style={[styles.genderButtonText, { color: colors.text.main }, selectedGender === 'female' && styles.genderButtonTextActive]}>
           {genders['female']}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
-        style={[styles.genderButton, selectedGender === 'unisex' && styles.genderButtonActive]}
+        style={[styles.genderButton, { backgroundColor: colors.gray }, selectedGender === 'unisex' && styles.genderButtonActive]}
         onPress={() => onGenderChange('unisex')}
       >
-        <Ionicons name="people-outline" size={18} color={selectedGender === 'unisex' ? "#fff" : "#666"} />
-        <Text style={[styles.genderButtonText, selectedGender === 'unisex' && styles.genderButtonTextActive]}>
+        <Ionicons name="people-outline" size={18} color={selectedGender === 'unisex' ? colors.white : colors.text.main} />
+        <Text style={[styles.genderButtonText, { color: colors.text.main }, selectedGender === 'unisex' && styles.genderButtonTextActive]}>
           {genders['unisex']}
         </Text>
       </TouchableOpacity>

@@ -5,11 +5,12 @@ export type FilterConstraint = [operator: FilterOperator, field: string, value: 
 export type TableName = 'clothes' | 'outfits' | 'users' | 'likes' | 'comments';
 export function fetch(
   tableName: string,
-  constraints: FilterConstraint[] = []
+  constraints: FilterConstraint[] = [],
+  customSelect: string = '*'
 ) : PostgrestFilterBuilder<any, any, any> {
   let query = supabase
     .from(tableName)
-    .select('*')
+    .select(customSelect)
 
   for (const [operator, field, value] of constraints) {
     query = applyFilter(query, operator, field, value);
@@ -18,7 +19,7 @@ export function fetch(
   return query;
 }
 
-function applyFilter<T>(
+export function applyFilter<T>(
   query: PostgrestFilterBuilder<any, any, T>,
   operator: FilterOperator,
   field: string,

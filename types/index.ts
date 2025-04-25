@@ -30,6 +30,7 @@ export type ClothingItem = {
   pattern: Pattern | null;
   material?: string;
   image_url: string;
+  reference?: string;
   created_at: string;
   clothe?: ClothingItem;
 };
@@ -48,6 +49,8 @@ export type Outfit = {
   user: User;
   likes?: Like[]; 
   clothes?: (ClothingItem & { clothe?: ClothingItem })[];
+  likes_count?: number;
+  comments_count?: number;
 };
 
 export type ClothesOutfit = {

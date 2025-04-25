@@ -35,14 +35,20 @@ const FilterContext = createContext<FilterContextType | undefined>(undefined);
 export const FilterProvider = ({ children }: { children: ReactNode }) => {
   // État des filtres pour les vêtements
   const [clothesFilter, setClothesFilter] = useState<string | null>(null);
-  const [clothesAdvancedFilters, setClothesAdvancedFilters] = useState<Filters>({ brands: [], colors: [], patterns: [] });
+  const [clothesAdvancedFilters, setClothesAdvancedFilters] = useState<Filters>({ 
+    brands: [], 
+    colors: [], 
+    patterns: [], 
+    materials: [],
+    colorFilterMode: 'differentItems'
+  });
   
   // État des filtres pour les tenues
   const [outfitFilters, setOutfitFilters] = useState<OutfitFilters>({ 
     seasons: [], 
     occasions: [],
     genders: [],
-    onlyFavorites: false 
+    withFavorites: false 
   });
   
   // État de visibilité des modales
@@ -55,11 +61,17 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
   // Fonctions utilitaires
   const resetClothesFilters = () => {
     setClothesFilter(null);
-    setClothesAdvancedFilters({ brands: [], colors: [], patterns: [] });
+    setClothesAdvancedFilters({ 
+      brands: [], 
+      colors: [], 
+      patterns: [], 
+      materials: [], 
+      colorFilterMode: 'differentItems' 
+    });
   };
   
   const resetOutfitFilters = () => {
-    setOutfitFilters({ seasons: [], occasions: [], genders: [], onlyFavorites: false });
+    setOutfitFilters({ seasons: [], occasions: [], genders: [], withFavorites: false });
   };
   
   const getClothesFilterCount = () => {
@@ -69,7 +81,7 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
   
   const getOutfitFilterCount = () => {
     return outfitFilters.seasons.length + outfitFilters.occasions.length + 
-           outfitFilters.genders.length + (outfitFilters.onlyFavorites ? 1 : 0);
+           outfitFilters.genders.length + (outfitFilters.withFavorites ? 1 : 0);
   };
   
   return (

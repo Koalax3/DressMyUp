@@ -8,7 +8,8 @@ import {
   FlatList, 
   ScrollView, 
   Dimensions,
-  SafeAreaView
+  SafeAreaView,
+  Switch
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ClothingItem } from '../types';
@@ -16,6 +17,11 @@ import { COLORS } from '@/constants/Clothes';
 import { PATTERNS, Pattern } from '@/constants/Clothes';
 import { MATERIALS } from '@/constants/Materials';
 import ColorDot from './ColorDot';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
+import { ColorsTheme, getThemeColors } from '@/constants/Colors';
+import StripedElement from './StripedElement';
+import { useTheme } from '@/contexts/ThemeContext';
 
 const { width } = Dimensions.get('window');
 
@@ -35,6 +41,7 @@ export type ClotheFilters = {
   colors: string[];
   patterns: string[];
   materials: string[];
+  colorFilterMode?: 'sameItem' | 'differentItems';
 };
 
 // Filtres par défaut
@@ -42,7 +49,8 @@ const defaultFilters: ClotheFilters = {
   brands: [],
   colors: [],
   patterns: [],
-  materials: []
+  materials: [],
+  colorFilterMode: 'differentItems'
 };
 
 const ClotheFilterModal = ({ 
@@ -52,16 +60,23 @@ const ClotheFilterModal = ({
   clothes,
   currentFilters = defaultFilters
 }: ClotheFilterModalProps) => {
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
+
   // S'assurer que toutes les propriétés sont définies dans les filtres
   const safeCurrentFilters: ClotheFilters = {
     brands: currentFilters?.brands || [],
     colors: currentFilters?.colors || [],
     patterns: currentFilters?.patterns || [],
-    materials: currentFilters?.materials || []
+    materials: currentFilters?.materials || [],
+    colorFilterMode: currentFilters?.colorFilterMode || 'differentItems'
   };
 
-  const [filters, setFilters] = useState<ClotheFilters>(safeCurrentFilters);
+  const [localFilters, setLocalFilters] = useState<ClotheFilters>(safeCurrentFilters);
   const [activeTab, setActiveTab] = useState<'brands' | 'colors' | 'patterns' | 'materials'>('brands');
+  const [colorFilterMode, setColorFilterMode] = useState<'sameItem' | 'differentItems'>(
+    safeCurrentFilters.colorFilterMode || 'differentItems'
+  );
   
   // Extraire les marques uniques de la garde-robe
   const uniqueBrands = React.useMemo(() => {
@@ -98,14 +113,16 @@ const ClotheFilterModal = ({
         brands: currentFilters?.brands || [],
         colors: currentFilters?.colors || [],
         patterns: currentFilters?.patterns || [],
-        materials: currentFilters?.materials || []
+        materials: currentFilters?.materials || [],
+        colorFilterMode: currentFilters?.colorFilterMode || 'differentItems'
       };
-      setFilters(safeCurrent);
+      setLocalFilters(safeCurrent);
+      setColorFilterMode(safeCurrent.colorFilterMode || 'differentItems');
     }
   }, [visible, currentFilters]);
 
   const toggleBrand = (brand: string) => {
-    setFilters(prev => {
+    setLocalFilters(prev => {
       const brands = prev.brands || [];
       if (brands.includes(brand)) {
         return { ...prev, brands: brands.filter(b => b !== brand) };
@@ -116,7 +133,7 @@ const ClotheFilterModal = ({
   };
 
   const toggleColor = (color: string) => {
-    setFilters(prev => {
+    setLocalFilters(prev => {
       const colors = prev.colors || [];
       if (colors.includes(color)) {
         return { ...prev, colors: colors.filter(c => c !== color) };
@@ -127,7 +144,7 @@ const ClotheFilterModal = ({
   };
 
   const togglePattern = (pattern: string) => {
-    setFilters(prev => {
+    setLocalFilters(prev => {
       const patterns = prev.patterns || [];
       if (patterns.includes(pattern)) {
         return { ...prev, patterns: patterns.filter(p => p !== pattern) };
@@ -138,7 +155,7 @@ const ClotheFilterModal = ({
   };
 
   const toggleMaterial = (material: string) => {
-    setFilters(prev => {
+    setLocalFilters(prev => {
       const materials = prev.materials || [];
       if (materials.includes(material)) {
         return { ...prev, materials: materials.filter(m => m !== material) };
@@ -148,13 +165,22 @@ const ClotheFilterModal = ({
     });
   };
 
+  // Fonction pour changer le mode de filtrage des couleurs
+  const toggleColorFilterMode = () => {
+    setColorFilterMode(prev => prev === 'sameItem' ? 'differentItems' : 'sameItem');
+  };
+
   const applyFilters = () => {
-    onApplyFilters(filters);
+    onApplyFilters({
+      ...localFilters,
+      colorFilterMode
+    });
     onClose();
   };
 
   const resetFilters = () => {
-    setFilters(defaultFilters);
+    setLocalFilters(defaultFilters);
+    setColorFilterMode('differentItems');
   };
 
   type FilterItemProps = {
@@ -182,10 +208,12 @@ const ClotheFilterModal = ({
       type === 'color' ? styles.colorListItem : 
       type === 'brand' ? styles.brandItem : 
       type === 'pattern' ? styles.patternItem : styles.materialItem,
+      { borderBottomColor: colors.text.lighter },
       isSelected && (
-        type === 'color' ? styles.colorListItemSelected : 
-        type === 'brand' ? styles.brandItemSelected : 
-        type === 'pattern' ? styles.patternItemSelected : styles.materialItemSelected
+        type === 'color' ? [styles.colorListItemSelected, { backgroundColor: colors.gray }] : 
+        type === 'brand' ? [styles.brandItemSelected, { backgroundColor: colors.gray }] : 
+        type === 'pattern' ? [styles.patternItemSelected, { backgroundColor: colors.gray }] : 
+        [styles.materialItemSelected, { backgroundColor: colors.gray }]
       )
     ];
 
@@ -193,10 +221,12 @@ const ClotheFilterModal = ({
       type === 'color' ? styles.colorListItemName :
       type === 'brand' ? styles.brandName : 
       type === 'pattern' ? styles.patternName : styles.materialName,
+      { color: colors.text.main },
       isSelected && (
-        type === 'color' ? styles.colorListItemNameSelected :
-        type === 'brand' ? styles.brandNameSelected : 
-        type === 'pattern' ? styles.patternNameSelected : styles.materialNameSelected
+        type === 'color' ? [styles.colorListItemNameSelected, { color: colors.primary.main }] :
+        type === 'brand' ? [styles.brandNameSelected, { color: colors.primary.main }] : 
+        type === 'pattern' ? [styles.patternNameSelected, { color: colors.primary.main }] : 
+        [styles.materialNameSelected, { color: colors.primary.main }]
       )
     ];
 
@@ -222,7 +252,7 @@ const ClotheFilterModal = ({
         )}
         
         {isSelected && (
-          <Ionicons name="checkmark" size={18} color="#F97A5C" />
+          <Ionicons name="checkmark" size={18} color={colors.primary.main} />
         )}
       </TouchableOpacity>
     );
@@ -231,7 +261,7 @@ const ClotheFilterModal = ({
   const renderColorItem = ({ item }: { item: typeof COLORS[0] }) => (
     <FilterItem
       item={item}
-      isSelected={filters.colors.includes(item.name)}
+      isSelected={localFilters.colors.includes(item.name)}
       onToggle={() => toggleColor(item.name)}
       type="color"
     />
@@ -240,7 +270,7 @@ const ClotheFilterModal = ({
   const renderBrandItem = ({ item }: { item: string }) => (
     <FilterItem
       item={item}
-      isSelected={filters.brands.includes(item)}
+      isSelected={localFilters.brands.includes(item)}
       onToggle={() => toggleBrand(item)}
       type="brand"
     />
@@ -249,7 +279,7 @@ const ClotheFilterModal = ({
   const renderPatternItem = ({ item }: { item: string }) => (
     <FilterItem
       item={item}
-      isSelected={filters.patterns.includes(item)}
+      isSelected={localFilters.patterns.includes(item)}
       onToggle={() => togglePattern(item)}
       type="pattern"
     />
@@ -258,11 +288,25 @@ const ClotheFilterModal = ({
   const renderMaterialItem = ({ item }: { item: string }) => (
     <FilterItem
       item={item}
-      isSelected={filters.materials.includes(item)}
+      isSelected={localFilters.materials.includes(item)}
       onToggle={() => toggleMaterial(item)}
       type="material"
     />
   );
+
+  // Fonction pour récupérer les couleurs sélectionnées sous forme de tableau
+  const getMultiColorArray = () => {
+    // Si aucune couleur n'est sélectionnée, utiliser les couleurs par défaut
+    if (localFilters.colors.length === 0) {
+      return [ColorsTheme.primary.main, ColorsTheme.secondary.main];
+    }
+    
+    // Récupérer les couleurs sélectionnées
+    return localFilters.colors.map(colorName => {
+      const colorObj = COLORS.find(c => c.name === colorName);
+      return colorObj ? colorObj.value : ColorsTheme.primary.main;
+    });
+  };
 
   return (
     <Modal
@@ -271,126 +315,190 @@ const ClotheFilterModal = ({
       transparent={false}
       onRequestClose={() => onClose()}
     >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
+        <View style={[styles.header, { 
+          borderBottomColor: colors.text.lighter,
+          backgroundColor: colors.background.main 
+        }]}>
           <TouchableOpacity onPress={() => onClose()} style={styles.closeButton}>
-            <Ionicons name="close" size={24} color="#333" />
+            <Ionicons name="close" size={24} color={colors.text.main} />
           </TouchableOpacity>
-          <Text style={styles.title}>Filtres</Text>
-          <TouchableOpacity onPress={resetFilters} style={styles.resetButton}>
-            <Text style={styles.resetText}>Réinitialiser</Text>
+          <Text style={[styles.title, { color: colors.text.main }]}>Filtres</Text>
+          <TouchableOpacity onPress={resetFilters} style={[styles.resetButton, { backgroundColor: colors.gray }]}>
+            <Text style={[styles.resetText, { color: colors.primary.main }]}>Réinitialiser</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.tabs}>
+        <View style={[styles.tabs, { borderBottomColor: colors.text.lighter }]}>
           <TouchableOpacity 
-            style={[styles.tab, activeTab === 'brands' && styles.activeTab]} 
+            style={[styles.tab, activeTab === 'brands' && [styles.activeTab, { borderBottomColor: colors.primary.main }]]} 
             onPress={() => setActiveTab('brands')}
           >
             <Text 
-              style={[styles.tabText, activeTab === 'brands' && styles.activeTabText]}
+              style={[
+                styles.tabText, 
+                { color: colors.text.light },
+                activeTab === 'brands' && [styles.activeTabText, { color: colors.primary.main }]
+              ]}
             >
               Marques
+              {localFilters.brands.length > 0 && ` (${localFilters.brands.length})`}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.tab, activeTab === 'colors' && styles.activeTab]} 
+            style={[styles.tab, activeTab === 'colors' && [styles.activeTab, { borderBottomColor: colors.primary.main }]]} 
             onPress={() => setActiveTab('colors')}
           >
             <Text 
-              style={[styles.tabText, activeTab === 'colors' && styles.activeTabText]}
+              style={[
+                styles.tabText, 
+                { color: colors.text.light },
+                activeTab === 'colors' && [styles.activeTabText, { color: colors.primary.main }]
+              ]}
             >
               Couleurs
+              {localFilters.colors.length > 0 && ` (${localFilters.colors.length})`}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.tab, activeTab === 'patterns' && styles.activeTab]} 
+            style={[styles.tab, activeTab === 'patterns' && [styles.activeTab, { borderBottomColor: colors.primary.main }]]} 
             onPress={() => setActiveTab('patterns')}
           >
             <Text 
-              style={[styles.tabText, activeTab === 'patterns' && styles.activeTabText]}
+              style={[
+                styles.tabText, 
+                { color: colors.text.light },
+                activeTab === 'patterns' && [styles.activeTabText, { color: colors.primary.main }]
+              ]}
             >
               Motifs
+              {localFilters.patterns.length > 0 && ` (${localFilters.patterns.length})`}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={[styles.tab, activeTab === 'materials' && styles.activeTab]} 
+            style={[styles.tab, activeTab === 'materials' && [styles.activeTab, { borderBottomColor: colors.primary.main }]]} 
             onPress={() => setActiveTab('materials')}
           >
             <Text 
-              style={[styles.tabText, activeTab === 'materials' && styles.activeTabText]}
+              style={[
+                styles.tabText, 
+                { color: colors.text.light },
+                activeTab === 'materials' && [styles.activeTabText, { color: colors.primary.main }]
+              ]}
             >
               Matériaux
+              {localFilters.materials.length > 0 && ` (${localFilters.materials.length})`}
             </Text>
           </TouchableOpacity>
         </View>
 
-        {activeTab === 'brands' ? (
-          uniqueBrands.length > 0 ? (
-            <FlatList
-              data={uniqueBrands}
-              renderItem={renderBrandItem}
-              keyExtractor={(item) => item}
-              contentContainerStyle={styles.brandList}
-            />
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Aucune marque disponible</Text>
-            </View>
-          )
-        ) : activeTab === 'colors' ? (
-          <FlatList
-            data={COLORS}
-            renderItem={renderColorItem}
-            keyExtractor={(item) => item.name}
-            contentContainerStyle={styles.colorList}
-          />
-        ) : activeTab === 'patterns' ? (
-          uniquePatterns.length > 0 ? (
-            <FlatList
-              data={uniquePatterns}
-              renderItem={renderPatternItem}
-              keyExtractor={(item) => item}
-              contentContainerStyle={styles.patternList}
-            />
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Aucun motif disponible</Text>
-            </View>
-          )
-        ) : (
-          uniqueMaterials.length > 0 ? (
-            <FlatList
-              data={uniqueMaterials}
-              renderItem={renderMaterialItem}
-              keyExtractor={(item) => item}
-              contentContainerStyle={styles.materialList}
-            />
-          ) : (
-            <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>Aucun matériau disponible</Text>
-            </View>
-          )
-        )}
+        <ScrollView style={[{flex: 1}, { backgroundColor: colors.background.main }]} showsVerticalScrollIndicator={false}>
+          {activeTab === 'brands' ? (
+            <>
+              {uniqueBrands.length > 0 ? (
+                <FlatList
+                  data={uniqueBrands}
+                  renderItem={renderBrandItem}
+                  keyExtractor={(item) => item}
+                />
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyText, { color: colors.text.light }]}>Aucune marque disponible</Text>
+                </View>
+              )}
+            </>
+          ) : null}
 
-        <View style={styles.footer}>
-          <TouchableOpacity 
-            style={styles.applyButton}
-            onPress={applyFilters}
-          >
-            <Text style={styles.applyButtonText}>
-              Appliquer 
-              {((filters.brands && filters.brands.length > 0) || 
-                (filters.colors && filters.colors.length > 0) || 
-                (filters.patterns && filters.patterns.length > 0) || 
-                (filters.materials && filters.materials.length > 0)) && 
-                ` (${(filters.brands?.length || 0) + 
-                     (filters.colors?.length || 0) + 
-                     (filters.patterns?.length || 0) + 
-                     (filters.materials?.length || 0)})`
-              }
-            </Text>
-          </TouchableOpacity>
+          {activeTab === 'colors' ? (
+            <>              
+              <FlatList
+                data={COLORS}
+                renderItem={renderColorItem}
+                keyExtractor={(item) => item.name}
+              />
+            </>
+          ) : null}
+
+          {activeTab === 'patterns' ? (
+            <>
+              {uniquePatterns.length > 0 ? (
+                <FlatList
+                  data={uniquePatterns}
+                  renderItem={renderPatternItem}
+                  keyExtractor={(item) => item}
+                />
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyText, { color: colors.text.light }]}>Aucun motif disponible</Text>
+                </View>
+              )}
+            </>
+          ) : null}
+
+          {activeTab === 'materials' ? (
+            <>
+              {uniqueMaterials.length > 0 ? (
+                <FlatList
+                  data={uniqueMaterials}
+                  renderItem={renderMaterialItem}
+                  keyExtractor={(item) => item}
+                />
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <Text style={[styles.emptyText, { color: colors.text.light }]}>Aucun matériau disponible</Text>
+                </View>
+              )}
+            </>
+          ) : null}
+        </ScrollView>
+
+        <View style={[styles.footer, { 
+          borderTopColor: colors.text.lighter,
+          backgroundColor: colors.background.main 
+        }]}>
+          {/* Option pour le mode de filtrage des couleurs */}
+          {localFilters.colors.length > 1 && (
+            <View style={styles.colorFilterModeContainer}>
+              <View style={styles.colorFilterModeOptions}>
+                <Ionicons name="shirt" size={24} color={colors.primary.main} />
+                <Ionicons name="shirt" size={24} color={colors.secondary.main} />
+                <Switch
+                  value={colorFilterMode === 'sameItem'}
+                  onValueChange={toggleColorFilterMode}
+                  trackColor={{ false: colors.primary.light, true: colors.secondary.lighter }}
+                  thumbColor={colorFilterMode === 'sameItem' ? colors.secondary.main : colors.primary.main}
+                  ios_backgroundColor={colors.text.light}
+                  style={{ marginHorizontal: 10 }}
+                />
+                <StripedElement
+                  maskElement={<Ionicons name="shirt" size={24}/>}
+                  colors={[colors.primary.main, colors.secondary.main]}
+                  stripeCount={8}
+                  orientation={'horizontal'}
+                  width={26}
+                  height={26}
+                />
+              </View>
+              <Text style={[styles.colorFilterModeDescription, { color: colors.text.light }]}>
+                {colorFilterMode === 'sameItem' ? 'Vêtements composés de toutes les couleurs' : 'Vêtements composés d\'une de ces couleurs'}
+              </Text>
+            </View>
+          )}
+          <View style={styles.buttonContainer}>
+            <TouchableOpacity 
+              style={[styles.resetFiltersButton, { backgroundColor: colors.background.deep }]}
+              onPress={resetFilters}
+            >
+              <Text style={[styles.resetFiltersButtonText, { color: colors.primary.main }]}>Réinitialiser</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.applyButton, { backgroundColor: colors.primary.main }]}
+              onPress={applyFilters}
+            >
+              <Text style={[styles.applyButtonText, { color: colors.text.bright }]}>Appliquer</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     </Modal>
@@ -408,8 +516,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   closeButton: {
     padding: 5,
@@ -420,7 +526,9 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   resetButton: {
-    padding: 5,
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+    borderRadius: 15,
   },
   resetText: {
     fontSize: 14,
@@ -448,17 +556,73 @@ const styles = StyleSheet.create({
     color: '#F97A5C',
     fontWeight: 'bold',
   },
-  brandList: {
-    paddingHorizontal: 15,
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+    marginHorizontal: 15,
   },
-  colorList: {
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     paddingHorizontal: 15,
+    paddingVertical: 10,
   },
-  patternList: {
-    paddingHorizontal: 15,
+  resetFiltersButton: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginRight: 8,
   },
-  materialList: {
-    paddingHorizontal: 15,
+  resetFiltersButtonText: {
+    color: '#F97A5C',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  applyButton: {
+    flex: 1,
+    backgroundColor: '#F97A5C',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  applyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  colorFilterModeContainer: {
+  },
+  colorFilterModeText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  colorFilterModeOptions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colorFilterModeOption: {
+    fontSize: 14,
+    color: '#666',
+  },
+  colorFilterModeOptionActive: {
+    fontSize: 14,
+    color: '#F97A5C',
+    fontWeight: 'bold',
+  },
+  colorFilterModeDescription: {
+    fontSize: 12,
+    color: '#999',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   brandItem: {
     flexDirection: 'row',
@@ -467,6 +631,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 15,
   },
   brandItemSelected: {
     backgroundColor: '#FFF5F5',
@@ -486,6 +651,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 15,
   },
   patternItemSelected: {
     backgroundColor: '#FFF5F5',
@@ -505,6 +671,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 15,
   },
   materialItemSelected: {
     backgroundColor: '#FFF5F5',
@@ -524,6 +691,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+    paddingHorizontal: 15,
   },
   colorListItemSelected: {
     backgroundColor: '#FFF5F5',
@@ -561,20 +729,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   footer: {
-    padding: 15,
+    padding: 5,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
-  },
-  applyButton: {
-    backgroundColor: '#F97A5C',
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  applyButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
   },
   emptyContainer: {
     flex: 1,
