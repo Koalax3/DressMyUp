@@ -26,6 +26,7 @@ import { ColorsTheme } from '@/constants/Colors';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import SeasonSelector from '@/components/SeasonSelector';
+import Header from '@/components/Header';
 
 // Type pour les vêtements avec position
 type ClothingWithPosition = ClothingItem & { position?: number };
@@ -107,7 +108,7 @@ export default function CreateOutfitScreen() {
           // Récupérer les autres informations du formulaire
           if (params.formName) setName(params.formName as string);
           if (params.formDescription) setDescription(params.formDescription as string);
-          if (params.formSeason) setSeason(params.formSeason as string);
+          if (params.formSeason) setSeason(params.formSeason as Season);
           if (params.formOccasion) setOccasion(params.formOccasion as string);
           if (params.formGender) setGender(params.formGender as string);
           if (params.formImage && params.formImage !== '') setOutfitImage(params.formImage as string);
@@ -243,9 +244,7 @@ export default function CreateOutfitScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <View style={[styles.header, { borderBottomColor: colors.text.lighter }]}>
-        <Text style={[styles.title, { color: colors.text.main }]}>Créer une tenue</Text>
-      </View>
+      <Header title="Créer une tenue" />
 
       <ScrollView style={styles.content}>
         <View style={styles.formSection}>
@@ -341,7 +340,7 @@ export default function CreateOutfitScreen() {
             style={[styles.wardrobeButton, { backgroundColor: colors.secondary.main }]}
             onPress={navigateToSelectClothes}
           >
-            <Ionicons name="shirt-outline" size={20} color={colors.text.bright} style={{ marginRight: 8 }} />
+            <Ionicons name="shirt-outline" size={20} color={colors.white} style={{ marginRight: 8 }} />
             <Text style={[styles.wardrobeButtonText, { color: colors.white }]}>
               {selectedClothesIds.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
             </Text>

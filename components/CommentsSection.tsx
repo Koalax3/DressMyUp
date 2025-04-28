@@ -180,7 +180,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
           <TextInput
             ref={commentInputRef}
             style={[styles.commentInput, { 
-              backgroundColor: colors.background.deep,
+              backgroundColor: colors.gray,
               color: colors.text.main
             }]}
             placeholder="Ajouter un commentaire..."
@@ -199,9 +199,9 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
             disabled={!commentText.trim() || commenting}
           >
             {commenting ? (
-              <ActivityIndicator size="small" color={colors.text.bright} />
+              <ActivityIndicator size="small" color={colors.white} />
             ) : (
-              <Text style={[styles.commentButtonText, { color: colors.text.bright }]}>Envoyer</Text>
+              <Text style={[styles.commentButtonText, { color: colors.white }]}>Envoyer</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -227,7 +227,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
               rightThreshold={width / 3}
             >
               <View style={[styles.comment, { 
-                backgroundColor: colors.background.deep,
+                backgroundColor: colors.gray,
                 borderColor: colors.background.main
               }]}>
                 <View style={styles.commentHeader}>

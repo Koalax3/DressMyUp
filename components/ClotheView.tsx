@@ -113,6 +113,7 @@ export default function ClotheView({
         return { borderColor: colors.primary.main }; // Couleur primaire pour indiquer la sélection
       }
       
+      const defaultBackgroundColor = isDarkMode ? colors.background.deep : colors.white;
       // Sinon, si on doit afficher le statut de correspondance
       if (showMatchStatus) {
         switch (matchType) {
@@ -123,12 +124,12 @@ export default function ClotheView({
             return { backgroundColor: colors.similar.lighter }; // Orange clair
           case MatchType.NONE:
           default:
-            return { backgroundColor: colors.background.deep }; // Couleur de fond appropriée
+            return { backgroundColor: defaultBackgroundColor}; // Couleur de fond appropriée
         }
       }
       
       // Par défaut
-      return { backgroundColor: colors.background.deep };
+      return { backgroundColor: defaultBackgroundColor };
     };
 
     const handlePress = () => {

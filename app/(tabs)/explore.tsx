@@ -100,7 +100,9 @@ export default function ExploreScreen() {
     if (filters.occasion !== 'all') {
       if (filters.occasion === 'fav' && user?.id) {
         const preferences = await getPreferences(user.id);
-        filterOptions.push(['in', 'occasion', preferences.styles]);
+        if (preferences) {
+          filterOptions.push(['in', 'occasion', preferences.styles]);
+        }
       } else {
         filterOptions.push(['eq', 'occasion', filters.occasion]);
       }
@@ -276,8 +278,8 @@ export default function ExploreScreen() {
             style={[
               styles.filterOption,
               { 
-                backgroundColor: colors.background.deep,
-                borderColor: colors.text.lighter 
+                backgroundColor: colors.gray,
+                borderColor: colors.gray 
               },
               filters[category] === option.value && {
                 backgroundColor: colors.primary.main,
@@ -290,7 +292,7 @@ export default function ExploreScreen() {
               style={[
                 styles.filterOptionText,
                 { color: colors.text.main },
-                filters[category] === option.value && { color: colors.text.bright }
+                filters[category] === option.value && { color: colors.white }
               ]}
             >
               {option.label}
@@ -328,7 +330,7 @@ export default function ExploreScreen() {
               name="sunny-outline" 
               size={16} 
               color={activeFilterCategory === 'season' 
-                ? colors.text.bright 
+                ? colors.white 
                 : colors.text.main
               } 
             />
@@ -337,7 +339,7 @@ export default function ExploreScreen() {
                 styles.filterCategoryText, 
                 { 
                   color: activeFilterCategory === 'season' 
-                    ? colors.text.bright 
+                    ? colors.white 
                     : colors.text.main 
                 }
               ]}
@@ -373,7 +375,7 @@ export default function ExploreScreen() {
                   name="shirt-outline" 
                   size={16} 
                   color={activeFilterCategory === 'occasion' 
-                    ? colors.text.bright 
+                    ? colors.white 
                     : colors.text.main
                   } 
                 />
@@ -382,7 +384,7 @@ export default function ExploreScreen() {
                     styles.filterCategoryText, 
                     { 
                       color: activeFilterCategory === 'occasion' 
-                        ? colors.text.bright 
+                        ? colors.white 
                         : colors.text.main 
                     }
                   ]}
@@ -408,7 +410,7 @@ export default function ExploreScreen() {
               name="people-outline" 
               size={16} 
               color={activeFilterCategory === 'gender' 
-                ? colors.text.bright 
+                ? colors.white 
                 : colors.text.main
               } 
             />
@@ -417,7 +419,7 @@ export default function ExploreScreen() {
                 styles.filterCategoryText, 
                 { 
                   color: activeFilterCategory === 'gender' 
-                    ? colors.text.bright 
+                    ? colors.white 
                     : colors.text.main 
                 }
               ]}
@@ -441,7 +443,7 @@ export default function ExploreScreen() {
               name={showFavorites ? "heart" : "heart-outline"} 
               size={16} 
               color={showFavorites 
-                ? colors.text.bright 
+                ? colors.white 
                 : colors.text.main
               } 
             />
@@ -450,7 +452,7 @@ export default function ExploreScreen() {
                 styles.filterCategoryText, 
                 { 
                   color: showFavorites 
-                    ? colors.text.bright 
+                    ? colors.white 
                     : colors.text.main 
                 }
               ]}
@@ -498,7 +500,13 @@ export default function ExploreScreen() {
               <View style={styles.loadingMoreContainer}>
                 <ActivityIndicator size="small" color={colors.primary.main} />
               </View>
-            ) : null
+            ) : (
+              filters.occasion === 'fav' ? <View style={styles.loadingMoreContainer}>
+                <TouchableOpacity onPress={() => setFilters({...filters, occasion: 'all'})} style={[styles.createButton, { backgroundColor: colors.primary.main }]}>
+                  <Text style={styles.createButtonText}>Afficher plus de tenues</Text>
+                </TouchableOpacity>
+              </View> : null
+            )
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
@@ -549,7 +557,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   filtersContainer: {
-    paddingTop: 10,
+    paddingTop: 15,
+    paddingBottom: 5,
   },
   filterCategoriesContainer: {
     paddingHorizontal: 15,

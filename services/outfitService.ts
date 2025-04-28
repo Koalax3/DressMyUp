@@ -25,7 +25,7 @@ export type CreateOutfitData = {
   description?: string;
   image_url?: string;
   season?: string;
-  occasion?: string;
+  occasion?: string | null;
 }
 const TABLE_NAME = 'outfits';
 // Création d'une tenue

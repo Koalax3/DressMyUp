@@ -187,6 +187,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
+    height: 65,
   },
   settingItemLeft: {
     flexDirection: 'row',

@@ -67,7 +67,7 @@ const DraggableClothingList: React.FC<DraggableClothingListProps> = ({
           ]}
         >
           <View style={styles.dragWrapper}>
-            <Ionicons name="menu" size={24} color={isDarkMode ? colors.text.light : "#999"} style={styles.dragIcon} />
+            <Ionicons name="menu" size={24} color={isDarkMode ? colors.primary.main : colors.secondary.main} style={styles.dragIcon} />
             <View style={styles.clotheViewContainer}>
               <Image source={{ uri: item.image_url }} style={[styles.clotheImage, { backgroundColor: isDarkMode ? colors.background.main : '#f5f5f5' }]} />
               <View style={styles.clotheDetails}>

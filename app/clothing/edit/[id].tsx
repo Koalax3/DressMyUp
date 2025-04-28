@@ -66,7 +66,6 @@ export default function EditClothingScreen() {
         initialData={clothingData}
         mode="edit"
         clothingId={id?.toString()}
-        title="Modifier le vêtement"
       />
     </SafeAreaView>
   );

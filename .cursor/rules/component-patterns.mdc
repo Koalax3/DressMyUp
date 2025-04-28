@@ -66,3 +66,4 @@ Les composants de sélection comme les pickers suivent un modèle consistant :
 5. Utiliser le component Header.tsx pour les hauts de page
 6. Les appels à la db doivent être faites dans un fichier services.
 7. Suivre le principe DRY (Don't Repeat Yourself)
+8. Utilise les Toast plutôt que les Alert

@@ -371,7 +371,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
               </View>
             </View>
 
-            <View style={[styles.sortContainer, { borderColor: colors.text.lighter }]}>
+            <View style={[styles.sortContainer, { borderColor: colors.gray }]}>
               <TouchableOpacity 
                 style={[
                   styles.sortButton, 
@@ -535,7 +535,7 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
     width: '100%',
     marginVertical: 8,
   },

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { ClothingItem, ClothingSubType, ClothingType } from '@/types';
+import { StyleSheet, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
+import { ClothingSubType, ClothingType } from '@/types';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ImagePicker from './ImagePicker';
@@ -15,12 +14,12 @@ import { PATTERNS } from '@/constants/Clothes';
 import { MATERIALS } from '@/constants/Materials';
 import { BRANDS } from '@/constants/Clothes';
 import { COLORS } from '@/constants/Clothes';
-import Header from './Header';
 import { supabase } from '@/constants/Supabase';
 import { decode } from 'base64-arraybuffer';
 import BrandSelector from './BrandSelector';
 import { useClothing } from '@/contexts/ClothingContext';
 import Toast from 'react-native-toast-message';
+import { ClothingService } from '@/services';
 
 export type ClothingFormData = {
   name: string;
@@ -60,7 +59,7 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
   const [name, setName] = useState(initialData.name || '');
   const [reference, setReference] = useState(initialData.reference || '');
   const [brand, setBrand] = useState<string | null | undefined>(initialData.brand || null);
-  const [type, setType] = useState<ClothingType>(initialData.type || 'top'); // Valeur par défaut pour éviter null
+  const [type, setType] = useState<ClothingType>(initialData.type || 'top');
   const [subtype, setSubtype] = useState<ClothingSubType | null | undefined>(initialData.subtype || null);
   const [color, setColor] = useState<string | null>(initialData.color || null);
   const [pattern, setPattern] = useState<string | null>(initialData.pattern || 'plain');
@@ -68,7 +67,23 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
   const [fit, setFit] = useState<string | null | undefined>(initialData.fit || null);
   const [image, setImage] = useState<string | null>(initialData.image_url || null);
   const [imageChanged, setImageChanged] = useState(false);
-  const [originalImage] = useState<string | null>(initialData.image_url || null);
+  const [originalImage, setOriginalImage] = useState<string | null>(initialData.image_url || null);
+
+  // Mettre à jour les états quand initialData change
+  useEffect(() => {
+    setName(initialData.name || '');
+    setReference(initialData.reference || '');
+    setBrand(initialData.brand || null);
+    setType(initialData.type || 'top');
+    setSubtype(initialData.subtype || null);
+    setColor(initialData.color || null);
+    setPattern(initialData.pattern || 'plain');
+    setMaterial(initialData.material || null);
+    setFit(initialData.fit || null);
+    setImage(initialData.image_url || null);
+    setOriginalImage(initialData.image_url || null);
+    setImageChanged(false);
+  }, [initialData]);
 
   // Obtenir les sous-types pour le type sélectionné
   const availableSubtypes = type ? subtypesByType[type] || {} : {};
@@ -258,9 +273,9 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
         disabled={isSubmitting || !name || !color || !image}
       >
         {isSubmitting ? (
-          <ActivityIndicator color={colors.text.bright} />
+          <ActivityIndicator color={colors.white} />
         ) : (
-          <Text style={[styles.saveButtonText, { color: colors.text.bright }]}>
+          <Text style={[styles.saveButtonText, { color: colors.white }]}>
             {mode === 'add' ? 'Ajouter' : 'Enregistrer'}
           </Text>
         )}
@@ -317,17 +332,15 @@ type ClothingFormWrapperProps = {
   initialData?: Partial<ClothingFormData>;
   mode: 'add' | 'edit';
   clothingId?: string;
-  title: string;
 };
 
 const ClothingFormWrapper: React.FC<ClothingFormWrapperProps> = ({ 
   initialData = {},
   mode, 
   clothingId,
-  title
 }) => {
   const { user } = useAuth();
-  const { updateClothing: updateClothingInContext, setRefreshing } = useClothing();
+  const { updateClothing: updateClothingInContext, setRefreshing, addClothing } = useClothing();
   const [isLoading, setIsLoading] = React.useState(false);
   const [uploadingImage, setUploadingImage] = React.useState(false);
   const { isDarkMode } = useTheme();
@@ -373,31 +386,26 @@ const ClothingFormWrapper: React.FC<ClothingFormWrapperProps> = ({
       
       if (mode === 'add') {
         // Insérer dans la base de données
-        const { error, data: newClothing } = await supabase
-          .from('clothes')
-          .insert([{
-            user_id: user.id,
-            name: formData.name,
-            reference: formData.reference,
-            brand: formData.brand,
-            type: formData.type || 'top', // Valeur par défaut pour éviter null
-            subtype: formData.subtype,
-            color: formData.color || '',
-            pattern: formData.pattern || 'plain', // Valeur par défaut pour éviter null
-            material: formData.material,
-            fit: formData.fit,
-            image_url: imageUrl || '',
-          }]);
+        const newClothing = await ClothingService.createClothing(user.id, {
+          name: formData.name,
+          reference: formData.reference,
+          brand: formData.brand || undefined,
+          type: formData.type,
+          subtype: formData.subtype,
+          color: formData.color || '',
+          pattern: formData.pattern || 'plain',
+          material: formData.material || undefined,
+          fit: formData.fit,
+          image_url: imageUrl || '',
+        });
           
-        if (error) {
-          throw error;
-        }
         if(newClothing) {
+          addClothing(newClothing);
           Toast.show({
             text1: 'Vêtement ajouté avec succès!',
             type: 'success',
           });
-          router.push(`/clothing/${(newClothing as any).id}`);
+          router.back();
         }
       } else if (mode === 'edit' && clothingId) {
         // Préparer l'objet de mise à jour compatible avec ClothingItem

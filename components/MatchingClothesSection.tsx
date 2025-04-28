@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, FlatList, ActivityIndicator, Image } from 'react-native';
+import { StyleSheet, View, Text, FlatList, ActivityIndicator, Image, Alert } from 'react-native';
 import { ClothingItem } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/constants/Supabase';
@@ -8,7 +8,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { isDressMatch, isSimilarMatch, isPerfectMatch } from '@/services/matchingService';
 import LargeButton from './LargeButton';
 import { router } from 'expo-router';
-import { ColorsTheme } from '@/constants/Colors';
+import { ColorsTheme, getThemeColors } from '@/constants/Colors';
+import { useClothing } from '@/contexts/ClothingContext';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type MatchingClothesSectionProps = {
   currentItem: ClothingItem;
@@ -16,17 +18,20 @@ type MatchingClothesSectionProps = {
 
 const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) => {
   const { user } = useAuth();
+  const { setClothingToCopy } = useClothing();
   const [loading, setLoading] = useState(true);
-  const [wardrobeItems, setWardrobeItems] = useState<ClothingItem[]>([]);
+  const { clothes } = useClothing();
   const [perfectMatches, setPerfectMatches] = useState<ClothingItem[]>([]);
   const [dressMatches, setDressMatches] = useState<ClothingItem[]>([]);
   const [similarMatches, setSimilarMatches] = useState<ClothingItem[]>([]);
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
 
   useEffect(() => {
     if (user) {
       fetchWardrobeItems();
     }
-  }, [currentItem, user]);
+  }, [currentItem, user, clothes]);
 
   const fetchWardrobeItems = async () => {
     if (!user) return;
@@ -34,22 +39,12 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
     setLoading(true);
     
     try {
-      const { data, error } = await supabase
-        .from('clothes')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('subtype', currentItem.subtype)
-        .neq('id', currentItem.id);
-        
-      if (error) throw error;
-      const items = data as ClothingItem[];
-      setWardrobeItems(items);
       
       const perfect: ClothingItem[] = [];
       const dress: ClothingItem[] = [];
       const similar: ClothingItem[] = [];
       
-      for (const item of items) {
+      for (const item of clothes) {
         const dressMatch = isDressMatch(item, currentItem);
         const perfectMatch = isPerfectMatch(item, currentItem);
         const similarMatch = isSimilarMatch(item, currentItem);
@@ -89,29 +84,29 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
         icon="shirt"
         color={ColorsTheme.background.main}
         title="Ajouter à ma garde-robe"
-        onPress={() => router.push({
-          pathname: '/clothing/add',
-          params: { selectItem: currentItem.id }
-        })}
+        onPress={() => {
+          setClothingToCopy(currentItem);
+          router.push('/clothing/add');
+        }}
       />
     )
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Dress Match</Text>
+      <Text style={{...styles.sectionTitle, color: colors.text.light}}>Dress Match<Ionicons onPress={() => Alert.alert('Dress Match', 'Dress Match compare le vêtement consulté avec les vêtements de ta garde-robe et ressort ceux qui ont des caractéristiques similaires.')} name="information-circle" size={16} style={{marginLeft: 10}} color={colors.primary.main} /></Text>
       {dressMatches.length > 0 && (
         <View style={styles.matchSection}>
           <View style={styles.matchTitleContainer}>
             <Image source={require('@/assets/images/dress-match.png')} style={styles.dressMatchImage} />
-            <Text style={styles.matchTitle}>Correspondances parfaites</Text>
+            <Text style={{...styles.matchTitle, color: colors.text.main}}>Correspondances parfaites</Text>
           </View>
           <FlatList
             data={dressMatches}
             renderItem={({ item }) => (
               <ClotheView 
                 clothingItem={item} 
-                userWardrobeItems={[currentItem, ...wardrobeItems]}
+                userWardrobeItems={[currentItem, ...clothes]}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -126,15 +121,15 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
       {perfectMatches.length > 0 && (
         <View style={styles.matchSection}>
           <View style={styles.matchTitleContainer}>
-            <Ionicons name="checkmark-circle" size={20} color="#4CAF50" />
-            <Text style={styles.matchTitle}>Fortes correspondances</Text>
+            <Ionicons name="checkmark-circle" size={20} color={colors.match.main} />
+            <Text style={{...styles.matchTitle, color: colors.text.main}}>Fortes correspondances</Text>
           </View>
           <FlatList
             data={perfectMatches}
             renderItem={({ item }) => (
               <ClotheView 
                 clothingItem={item} 
-                userWardrobeItems={[currentItem, ...wardrobeItems]}
+                userWardrobeItems={[currentItem, ...clothes]}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -149,8 +144,8 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
       {similarMatches.length > 0 && (
         <View style={styles.matchSection}>
           <View style={styles.matchTitleContainer}>
-            <Ionicons name="alert-circle" size={20} color="#FF9800" />
-            <Text style={styles.matchTitle}>Vêtements similaires</Text>
+            <Ionicons name="alert-circle" size={20} color={colors.similar.main} />
+            <Text style={{...styles.matchTitle, color: colors.text.main}}>Vêtements similaires</Text>
           </View>
           <FlatList
             data={similarMatches}
@@ -158,7 +153,7 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
               <ClotheView 
                 clothingItem={item} 
                 showMatchStatus={true}
-                userWardrobeItems={[currentItem, ...wardrobeItems]}
+                userWardrobeItems={[currentItem, ...clothes]}
               />
             )}
             keyExtractor={(item) => item.id}
@@ -211,7 +206,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,
-    color: '#444',
   },
   matchList: {
     marginTop: 5,

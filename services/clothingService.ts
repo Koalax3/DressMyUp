@@ -64,7 +64,6 @@ export const fetchUserClothes = async (userId: string, options?: FilterConstrain
         ...(options || [])
       ]
     );
-
     if (error) {
       throw new Error(`Erreur lors de la récupération des vêtements: ${error.message}`);
     }
@@ -188,7 +187,7 @@ export const updateClothing = async (id: string, userId: string, clothingData: P
 };
 
 /**
- * Télécharge une image et retourne son URL publique
+ * Télécharge une image de vêtement et retourne son URL publique
  */
 export const uploadClothingImage = async (userId: string, imageUri: string): Promise<string | null> => {
   try {
@@ -199,11 +198,13 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
         throw new Error("Format d'image invalide");
       }
       
-      const fileName = `${userId}/${Date.now()}.jpg`;
+      const fileExt = imageUri.split('.').pop() || 'jpg';
+      const fileName = `${userId}/${Date.now()}.${fileExt}`;
+      
       const { error } = await supabase.storage
-        .from(TABLE_NAME)
+        .from('clothing_images')
         .upload(fileName, decode(base64Data), {
-          contentType: 'image/jpeg',
+          contentType: `image/${fileExt}`,
           upsert: true
         });
       
@@ -212,7 +213,7 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
       }
       
       const { data } = supabase.storage
-        .from(TABLE_NAME)
+        .from('clothing_images')
         .getPublicUrl(fileName);
       
       return data.publicUrl;
@@ -233,11 +234,13 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
               return;
             }
             
-            const fileName = `${userId}/${Date.now()}.jpg`;
+            const fileExt = imageUri.split('.').pop() || 'jpg';
+            const fileName = `${userId}/${Date.now()}.${fileExt}`;
+            
             const { error } = await supabase.storage
-              .from(TABLE_NAME)
+              .from('clothing_images')
               .upload(fileName, decode(base64Data), {
-                contentType: 'image/jpeg',
+                contentType: `image/${fileExt}`,
                 upsert: true
               });
             
@@ -247,7 +250,7 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
             }
             
             const { data } = supabase.storage
-              .from(TABLE_NAME)
+              .from('clothing_images')
               .getPublicUrl(fileName);
             
             resolve(data.publicUrl);
@@ -255,12 +258,16 @@ export const uploadClothingImage = async (userId: string, imageUri: string): Pro
             reject(error);
           }
         };
-        reader.onerror = (error) => reject(error);
+        
+        reader.onerror = () => {
+          reject(new Error('Erreur lors de la lecture du fichier'));
+        };
+        
         reader.readAsDataURL(blob);
       });
     }
   } catch (error) {
-    console.error('Erreur lors du téléchargement de l\'image:', error);
+    console.error('Erreur lors de l\'upload de l\'image:', error);
     return null;
   }
 };

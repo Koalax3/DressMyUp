@@ -16,7 +16,7 @@ export default function ClotheItem({ item }: { item: ClothingItem }) {
   )
   return (
     <TouchableOpacity 
-      style={[styles.clothingItem, { backgroundColor: colors.gray }]}
+      style={[styles.clothingItem, { backgroundColor: isDarkMode ? colors.background.deep : colors.white }]}
       onPress={() => router.push(`/clothing/${item.id}`)}
     >
       <Image 

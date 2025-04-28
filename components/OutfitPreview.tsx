@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { likeOutfit } from '@/services/likeService';
 import MatchingPieChart from './MatchingPieChart';
 import { calculateMatchingPercentage } from '@/services/matchingService';
+import { ColorsTheme } from '@/constants/Colors';
 
 // Obtenir la largeur de l'écran pour calculer la taille des images
 const screenWidth = Dimensions.get('window').width;
@@ -137,7 +138,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#f0f0f0',
     borderWidth: 1,
-    borderColor: '#fff',
+    borderColor: ColorsTheme.primary.main,
   },
   username: {
     marginLeft: 8,

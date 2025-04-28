@@ -324,9 +324,7 @@ const ClotheFilterModal = ({
             <Ionicons name="close" size={24} color={colors.text.main} />
           </TouchableOpacity>
           <Text style={[styles.title, { color: colors.text.main }]}>Filtres</Text>
-          <TouchableOpacity onPress={resetFilters} style={[styles.resetButton, { backgroundColor: colors.gray }]}>
-            <Text style={[styles.resetText, { color: colors.primary.main }]}>Réinitialiser</Text>
-          </TouchableOpacity>
+          <View style={{width: 24}}></View>
         </View>
 
         <View style={[styles.tabs, { borderBottomColor: colors.text.lighter }]}>
@@ -486,10 +484,10 @@ const ClotheFilterModal = ({
           )}
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
-              style={[styles.resetFiltersButton, { backgroundColor: colors.background.deep }]}
+              style={[styles.resetFiltersButton, { backgroundColor: colors.secondary.main }]}
               onPress={resetFilters}
             >
-              <Text style={[styles.resetFiltersButtonText, { color: colors.primary.main }]}>Réinitialiser</Text>
+              <Text style={[styles.resetFiltersButtonText]}>Réinitialiser</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
@@ -579,7 +577,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   resetFiltersButtonText: {
-    color: '#F97A5C',
+    color: ColorsTheme.white,
     fontSize: 16,
     fontWeight: 'bold',
   },

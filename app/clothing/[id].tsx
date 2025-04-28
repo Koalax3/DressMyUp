@@ -82,6 +82,7 @@ export default function ClothingDetailScreen() {
           type: 'delete',
           text1: 'Vêtement supprimé avec succès',
         });
+        setRefreshing(true);
         router.back();
       } else {
         Alert.alert('Erreur', 'Impossible de supprimer ce vêtement. Veuillez réessayer.');
@@ -156,7 +157,7 @@ export default function ClothingDetailScreen() {
         </Header>
 
         <View style={styles.imageContainer}>
-          <Image source={{ uri: clothingItem.image_url }} style={[styles.image, { backgroundColor: colors.background.deep }]} />
+          <Image source={{ uri: clothingItem.image_url }} style={[styles.image, { backgroundColor: colors.gray }]} />
         </View>
 
         <View style={styles.infoContainer}>
@@ -214,8 +215,8 @@ export default function ClothingDetailScreen() {
                 params: { id: clothingItem.id }
               })}
             >
-              <Ionicons name="create-outline" size={20} color={colors.text.bright} />
-              <Text style={[styles.editButtonText, { color: colors.text.bright }]}>Modifier</Text>
+              <Ionicons name="create-outline" size={20} color={colors.white} />
+              <Text style={[styles.editButtonText]}>Modifier</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -225,12 +226,12 @@ export default function ClothingDetailScreen() {
                 params: { selectItem: clothingItem.id }
               })}
             >
-              <Ionicons name="shirt-outline" size={20} color={colors.text.bright} />
-              <Text style={[styles.outfitButtonText, { color: colors.text.bright }]}>Créer une tenue</Text>
+              <Ionicons name="shirt-outline" size={20} color={colors.white} />
+              <Text style={[styles.outfitButtonText]}>Créer une tenue</Text>
             </TouchableOpacity>
           </View>}
 
-          <MatchingClothesSection currentItem={clothingItem} />
+          {user && user.id !== clothingItem.user_id && <MatchingClothesSection currentItem={clothingItem} />}
 
         </View>
       </ScrollView>
@@ -282,6 +283,7 @@ const styles = StyleSheet.create({
   image: {
     width: '90%',
     height: 500,
+    aspectRatio: 3/4,
     objectFit: 'contain',
     borderRadius: 15,
   },
@@ -342,6 +344,7 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontWeight: 'bold',
     marginLeft: 5,
+    color: ColorsTheme.white,
   },
   outfitButton: {
     flexDirection: 'row',
@@ -356,6 +359,7 @@ const styles = StyleSheet.create({
   outfitButtonText: {
     fontWeight: 'bold',
     marginLeft: 5,
+    color: ColorsTheme.white,
   },
   button: {
     paddingHorizontal: 20,
@@ -363,7 +367,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   buttonText: {
-    color: '#fff',
+    color: ColorsTheme.white,
     fontWeight: 'bold',
     fontSize: 16,
   },

@@ -17,23 +17,27 @@ export type ClothingSubType =
   | 'sneakers' | 'boots' | 'flats' | 'heels' | 'sandals' | 'mocassin' | 'hoof' | 'slipper' | 'dress_shoes'  // shoes
   | 'hat' | 'scarf' | 'belt' | 'bag' | 'socks' | 'jewelry' | 'watch' | 'glasses' | 'nylon' // accessory
   | 'dress' | 'jumpsuit' | 'suit' | 'overalls';  // ensemble
-
-export type ClothingItem = {
-  id: string;
-  user_id: string;
-  name: string;
-  type: ClothingType;
-  subtype: ClothingSubType;
-  brand?: string;
-  color: string;
-  fit?: 'slim' | 'regular' | 'loose' | 'oversize';
-  pattern: Pattern | null;
-  material?: string;
-  image_url: string;
-  reference?: string;
-  created_at: string;
-  clothe?: ClothingItem;
+  
+  export type CreateClothingItem = {
+    user_id: string;
+    name: string;
+    type: ClothingType;
+    subtype: ClothingSubType;
+    brand?: string;
+    color: string;
+    fit?: 'slim' | 'regular' | 'loose' | 'oversize';
+    pattern: Pattern | null;
+    material?: string;
+    image_url: string;
+    reference?: string;
+    created_at: string;
+    
 };
+
+export type ClothingItem = CreateClothingItem & {
+  id: string;
+  clothe?: ClothingItem;
+}
 
 export type Outfit = {
   id: string;

@@ -70,7 +70,7 @@ const MultiColorDisplay: React.FC<MultiColorDisplayProps> = ({
           ))}
         </View>
       )}
-      <Text style={[styles.text, textStyle, { color: colors.text.light }]}>{getDisplayText()}</Text>
+      <Text style={[styles.text, textStyle, { color: colors.text.main }]}>{getDisplayText()}</Text>
     </View>
   );
 };

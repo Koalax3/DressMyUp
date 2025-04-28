@@ -22,6 +22,7 @@ import { useClothing } from '@/contexts/ClothingContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import { useIsFocused } from '@react-navigation/native';
+import SearchBar from '@/components/SearchBar';
 
 export default function WardrobeScreen() {
   const { user } = useAuth();
@@ -58,10 +59,17 @@ export default function WardrobeScreen() {
   const clothesListRef = useRef<Animated.FlatList<ClothingItem>>(null);
   const outfitsListRef = useRef<Animated.FlatList<Outfit>>(null);
   const [viewMode, setViewMode] = useState<'clothes' | 'outfits'>('clothes');
+  const [refreshingLocal, setRefreshingLocal] = useState(false);
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
-  const isFocused = useIsFocused();
   
+  useEffect(() => {
+    if(refreshingLocal) {
+      fetchClothes();
+      setRefreshingLocal(false);
+    }
+  }, [refreshingLocal]);
+
   const fetchClothes = async () => {
     if (!user) return;
     const filters = [] as FilterConstraint[];
@@ -70,6 +78,7 @@ export default function WardrobeScreen() {
 
     try {
         setLoading(true);
+        const clothes = await ClothingService.fetchUserClothes(user.id);
         applyFilters(clothes || [], searchText, clothesFilter, advancedFilters);
     } catch (error) {
       console.error('Erreur:', error);
@@ -306,21 +315,7 @@ export default function WardrobeScreen() {
       </Header>
       <View style={styles.header}>
         <View style={styles.searchContainer}>
-          <View style={[styles.searchBar, { backgroundColor: colors.gray }]}>
-            <Ionicons name="search" size={20} color={colors.text.light} style={styles.searchIcon} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text.main }]}
-              placeholder="Rechercher..."
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholderTextColor={colors.text.light}
-            />
-            {searchText.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchText('')}>
-                <Ionicons name="close-circle" size={20} color={colors.text.light} />
-              </TouchableOpacity>
-            )}
-          </View>
+          <SearchBar searchText={searchText} setSearchText={setSearchText} />
           {viewMode === 'clothes' ? (
             <TouchableOpacity 
               style={[styles.filterIconButton, { 
@@ -376,7 +371,7 @@ export default function WardrobeScreen() {
       ) : viewMode === 'clothes' ? (
         filteredClothes.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="shirt-outline" size={80} color={colors.text.light} />
+            <Ionicons name="shirt-outline" size={80} color={colors.darkGray} />
             <Text style={[styles.emptyText, { color: colors.text.main }]}>
               {searchText || getClothesFilterCount() > 0 
                 ? 'Aucun vêtement ne correspond à votre recherche' 
@@ -442,7 +437,7 @@ export default function WardrobeScreen() {
             numColumns={2}
             columnWrapperStyle={styles.outfitRow}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.primary.main]} />
+              <RefreshControl refreshing={refreshing} onRefresh={() => setRefreshing(true)} colors={[colors.primary.main]} />
             }
             onScroll={Animated.event(
               [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -517,24 +512,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: ColorsTheme.gray,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 40,
-  },
-  searchIcon: {
-    marginRight: 8,
-    color: ColorsTheme.primary.main,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: ColorsTheme.text.main,
   },
   filterIconButton: {
     marginLeft: 10,

@@ -5,7 +5,7 @@ export const getPreferences = async (userId: string) => {
     .from('preferences')
     .select('*')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   if (error) {
     throw new Error(`Erreur lors de la récupération des préférences: ${error.message}`);

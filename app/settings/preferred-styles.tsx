@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Alert } from 'react-native';
+import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { ColorsTheme } from '@/constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
-import Header from '@/components/Header';
 import { STYLES } from '@/constants/Outfits';
 import { useAuth } from '@/contexts/AuthContext';
 import { PreferencesService } from '@/services';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import Toast from 'react-native-toast-message';
+import Header from '@/components/Header';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 30 - 10) / 2; // 30 pour les paddings, 10 pour l'espace entre les colonnes
@@ -53,11 +54,11 @@ export default function PreferredStylesScreen() {
     try {
       setIsLoading(true);
       await PreferencesService.updatePreferences(user.id, selectedStyles);
-      Alert.alert(
-        'Succès',
-        'Vos styles préférés ont été enregistrés',
-        [{ text: 'OK', onPress: () => router.back() }]
-      );
+      Toast.show({
+        text1: 'Styles préférés enregistrés',
+        type: 'success',
+        visibilityTime: 3000,
+      });
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des préférences:', error);
       Alert.alert('Erreur', 'Une erreur s\'est produite lors de la sauvegarde de vos préférences');
@@ -68,13 +69,7 @@ export default function PreferredStylesScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <View style={[styles.header, { borderBottomColor: colors.text.lighter }]}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={colors.text.main} />
-        </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text.main }]}>Styles préférés</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <Header title="Styles préférés" back/>
 
       <ScrollView style={styles.content}>
         <View style={styles.grid}>
@@ -121,14 +116,18 @@ export default function PreferredStylesScreen() {
         style={[
           styles.saveButton, 
           isLoading && styles.saveButtonDisabled,
-          { backgroundColor: isLoading ? colors.gray : colors.primary.main }
+          { backgroundColor: colors.primary.main }
         ]} 
         onPress={handleSave}
         disabled={isLoading}
       >
+        {isLoading ?
+        <ActivityIndicator size="large" color={colors.white} />
+        : 
         <Text style={styles.saveButtonText}>
-          {isLoading ? 'Enregistrement...' : 'Enregistrer'}
+          Enregistrer
         </Text>
+        }
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -199,11 +198,12 @@ const styles = StyleSheet.create({
   saveButton: {
     margin: 15,
     padding: 15,
+    height: 60,
     borderRadius: 8,
     alignItems: 'center',
   },
   saveButtonDisabled: {
-    opacity: 0.7,
+    opacity: 0.8,
   },
   saveButtonText: {
     color: '#ffffff',

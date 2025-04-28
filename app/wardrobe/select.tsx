@@ -11,6 +11,7 @@ import { COLORS, BRANDS, types, subtypesByType, PATTERNS } from '../../constants
 import ClotheView from '@/components/ClotheView';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ColorsTheme, getThemeColors } from '@/constants/Colors';
+import SearchBar from '@/components/SearchBar';
 
 type WardrobeSelectParams = {
   multiple?: string;
@@ -297,26 +298,12 @@ export default function WardrobeSelectScreen() {
         </View>
         
         <View style={styles.searchContainer}>
-          <View style={[styles.searchBar, { backgroundColor: isDarkMode ? colors.background.deep : '#f5f5f5' }]}>
-            <Ionicons name="search" size={20} color={colors.text.lighter} style={styles.searchIcon} />
-            <TextInput
-              style={[styles.searchInput, { color: colors.text.main }]}
-              placeholder="Rechercher..."
-              value={searchText}
-              onChangeText={handleSearchTextChange}
-              placeholderTextColor={colors.text.lighter}
-            />
-            {searchText.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchText('')}>
-                <Ionicons name="close-circle" size={20} color={colors.text.lighter} />
-              </TouchableOpacity>
-            )}
-          </View>
+          <SearchBar searchText={searchText} setSearchText={setSearchText} />
           <TouchableOpacity 
-            style={[styles.filterIconButton, { backgroundColor: isDarkMode ? colors.background.deep : '#f5f5f5' }]}
+            style={[styles.filterIconButton, { backgroundColor: colors.gray }]}
             onPress={openFilterModal}
           >
-            <Ionicons name="options-outline" size={24} color={colors.text.main} />
+            <Ionicons name="options-outline" size={24} color={colors.primary.main} />
             {getFilterCount() > 0 && (
               <View style={styles.filterBadge}>
                 <Text style={styles.filterBadgeText}>{getFilterCount()}</Text>
@@ -453,6 +440,8 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 8,
     backgroundColor: '#f5f5f5',
+    borderWidth: 2,
+    borderColor: ColorsTheme.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
   },

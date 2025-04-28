@@ -6,6 +6,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import Header from '@/components/Header';
 
 export default function ProfileScreen() {
   const { user } = useAuth();
@@ -24,15 +25,11 @@ export default function ProfileScreen() {
   
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <View style={[styles.header, { borderBottomColor: colors.text.light }]}>
-        <Text style={[styles.title, { color: colors.text.main }]}>Profil</Text>
-        <TouchableOpacity 
-          style={styles.settingsButton}
-          onPress={navigateToSettings}
-        >
-          <Ionicons name="settings-outline" size={24} color={isDarkMode ? colors.text.main : "#333"} />
+      <Header title="Profil" >
+        <TouchableOpacity onPress={navigateToSettings}>
+          <Ionicons name="settings-outline" size={24} color={colors.text.main} />
         </TouchableOpacity>
-      </View>
+      </Header>
       <ProfileComponent
         userId={user.id}
         isCurrentUser={true}

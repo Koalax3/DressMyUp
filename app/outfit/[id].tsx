@@ -20,6 +20,7 @@ import { DEFAULT_USER_AVATAR } from '@/constants/Users';
 import Header from '@/components/Header';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useClothing } from '@/contexts/ClothingContext';
 
 // Définir le type localement pour correspondre exactement à ce que nous utilisons
 interface OutfitWithDetails extends Outfit {
@@ -41,8 +42,8 @@ export default function OutfitDetailScreen() {
   const [deleting, setDeleting] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [matchingPercentage, setMatchingPercentage] = useState(0);
-  const [userWardrobe, setUserWardrobe] = useState<ClothingItem[]>([]);
   const { isDarkMode } = useTheme();
+  const { clothes } = useClothing();
   const colors = getThemeColors(isDarkMode);
 
   useEffect(() => {
@@ -50,7 +51,6 @@ export default function OutfitDetailScreen() {
       fetchOutfitDetails();
       checkIfLiked();
       fetchLikesCount();
-      fetchUserWardrobe();
     }
   }, [id, user]);
 
@@ -204,27 +204,12 @@ export default function OutfitDetailScreen() {
     return date.toLocaleDateString();
   };
 
-  const fetchUserWardrobe = async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from('clothes')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      if (error) throw error;
-      setUserWardrobe(data || []);
-    } catch (error) {
-      console.error('Erreur lors de la récupération de la garde-robe:', error);
-    }
-  };
-
   useEffect(() => {
-    if (outfit && userWardrobe.length > 0) {
-      const percentage = calculateMatchingPercentage(outfit, userWardrobe);
+    if (outfit && clothes.length > 0) {
+      const percentage = calculateMatchingPercentage(outfit, clothes);
       setMatchingPercentage(percentage);
     }
-  }, [outfit, userWardrobe]);
+  }, [outfit, clothes]);
 
   // Ajouter un commentaire
   const handleCommentAdded = (newComment: Comment & { user: User }) => {
@@ -324,7 +309,7 @@ export default function OutfitDetailScreen() {
           
           <View style={styles.metadataContainer}>
             {outfit.season && (
-              <View style={[styles.metadataItem, { backgroundColor: colors.background.deep }]}>
+              <View style={[styles.metadataItem, { backgroundColor: colors.gray }]}>
                 <Ionicons name="sunny-outline" size={18} color={colors.primary.main} style={styles.metadataIcon} />
                 <Text style={[styles.metadataText, { color: colors.text.main }]}>
                   {seasons[outfit.season]}
@@ -333,7 +318,7 @@ export default function OutfitDetailScreen() {
             )}
             
             {outfit.occasion && (
-              <View style={[styles.metadataItem, { backgroundColor: colors.background.deep }]}>
+              <View style={[styles.metadataItem, { backgroundColor: colors.gray }]}>
                 <Ionicons name="calendar-outline" size={18} color={colors.primary.main} style={styles.metadataIcon} />
                 <Text style={[styles.metadataText, { color: colors.text.main }]}>
                   {occasions[outfit.occasion] || outfit.occasion}
@@ -342,7 +327,7 @@ export default function OutfitDetailScreen() {
             )}
             
             {outfit.gender && (
-              <View style={[styles.metadataItem, { backgroundColor: colors.background.deep }]}>
+              <View style={[styles.metadataItem, { backgroundColor: colors.gray }]}>
                 <Ionicons 
                   name={
                     outfit.gender === 'male' ? 'male-outline' :
@@ -388,13 +373,13 @@ export default function OutfitDetailScreen() {
 
           {outfit.clothes.length > 0 && <View style={styles.clothesContainer}>
             <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Vêtements</Text>
-            {userWardrobe.length > 0 && user && user.id !== outfit.user_id && (
-              <View style={[styles.matchingSection, { backgroundColor: colors.background.deep }]}>
+            {clothes.length > 0 && user && user.id !== outfit.user_id && (
+              <View style={[styles.matchingSection, { backgroundColor: colors.gray }]}>
                 <MatchingProgressBar percentage={matchingPercentage} />
               </View>
             )}
             {outfit.clothes.map((clothingItem : ClothingItem) => (
-              <ClotheView key={clothingItem.id} clothingItem={clothingItem.clothe!} userWardrobeItems={userWardrobe} showMatchStatus />
+              <ClotheView key={clothingItem.id} clothingItem={clothingItem.clothe!} userWardrobeItems={clothes} showMatchStatus />
             ))}
           </View>}
 
@@ -525,7 +510,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   settingsContainer: {
-    paddingHorizontal: 20,
     paddingBottom: 10,
   },
   settingSeparator: {
