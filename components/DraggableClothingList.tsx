@@ -6,16 +6,14 @@ import DraggableFlatList, {
 } from 'react-native-draggable-flatlist';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native-gesture-handler';
-import { ClothingItem } from '@/types';
+import { ClothingItem, ClothingWithPosition } from '@/types';
 import { getThemeColors } from '@/constants/Colors';
 import { subtypesByType } from '@/constants/Clothes';
 import { useTheme } from '@/contexts/ThemeContext';
-
-type ClothingWithPosition = ClothingItem & { position?: number };
+import { useOutfit } from '@/contexts/OutfitContext';
 
 type DraggableClothingListProps = {
-  items: ClothingWithPosition[];
-  onDragEnd: (data: ClothingWithPosition[]) => void;
+  onDragEnd?: (data: ClothingWithPosition[]) => void;
   onRemoveItem?: (id: string) => void;
 };
 
@@ -23,13 +21,12 @@ type DraggableClothingListProps = {
 const { height: screenHeight } = Dimensions.get('window');
 
 const DraggableClothingList: React.FC<DraggableClothingListProps> = ({
-  items,
   onDragEnd,
   onRemoveItem
 }) => {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
-
+  const { clothescreateOutfit, setClothescreateOutfit } = useOutfit();
   // Calculer une hauteur fixe en fonction du nombre d'éléments et de la taille de l'écran
   const calculateHeight = () => {
     const itemHeight = 90; // hauteur estimée de chaque élément
@@ -37,7 +34,7 @@ const DraggableClothingList: React.FC<DraggableClothingListProps> = ({
     const maxHeight = screenHeight * 0.6; // limite à 60% de la hauteur de l'écran
     
     const calculatedHeight = Math.min(
-      items.length * itemHeight,
+      clothescreateOutfit.length * itemHeight,
       maxVisibleItems * itemHeight,
       maxHeight
     );
@@ -45,13 +42,28 @@ const DraggableClothingList: React.FC<DraggableClothingListProps> = ({
     return Math.max(calculatedHeight, 100); // au moins 100px de hauteur
   };
 
+  const handleDragEnd = ({ data }: { data: ClothingWithPosition[] }) => {
+    // Mettre à jour les positions des vêtements
+    const updatedData = data.map((item, index) => ({
+      ...item,
+      position: index
+    }));
+    
+    setClothescreateOutfit(updatedData);
+    onDragEnd?.(updatedData);
+  };
+
+  const handleRemoveItem = (id: string) => {
+    const updatedClothes = clothescreateOutfit.filter(item => item.id !== id);
+    setClothescreateOutfit(updatedClothes);
+    onRemoveItem?.(id);
+  };
+
   const renderItem = ({ item, drag, isActive }: RenderItemParams<ClothingWithPosition>) => {
     return (
       <ScaleDecorator>
-        <TouchableOpacity
-          activeOpacity={0.7}
-          onPressIn={drag}
-          style={[
+        <View
+          style={[ 
             styles.itemContainer,
             { 
               backgroundColor: isDarkMode ? colors.background.deep : '#fff',
@@ -67,7 +79,9 @@ const DraggableClothingList: React.FC<DraggableClothingListProps> = ({
           ]}
         >
           <View style={styles.dragWrapper}>
-            <Ionicons name="menu" size={24} color={isDarkMode ? colors.primary.main : colors.secondary.main} style={styles.dragIcon} />
+            <TouchableOpacity onPressIn={drag}>
+              <Ionicons name="menu" size={24} color={isDarkMode ? colors.primary.main : colors.secondary.main} style={styles.dragIcon} />
+            </TouchableOpacity>
             <View style={styles.clotheViewContainer}>
               <Image source={{ uri: item.image_url }} style={[styles.clotheImage, { backgroundColor: isDarkMode ? colors.background.main : '#f5f5f5' }]} />
               <View style={styles.clotheDetails}>
@@ -79,16 +93,14 @@ const DraggableClothingList: React.FC<DraggableClothingListProps> = ({
                 </Text>
               </View>
             </View>
-            {onRemoveItem && (
-              <TouchableOpacity 
-                style={styles.removeButton}
-                onPress={() => onRemoveItem(item.id)}
-              >
-                <Ionicons name="close-circle" size={22} color={colors.primary.main} />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity 
+              style={styles.removeButton}
+              onPress={() => handleRemoveItem(item.id)}
+            >
+              <Ionicons name="close-circle" size={22} color={colors.primary.main} />
+            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </ScaleDecorator>
     );
   };
@@ -102,14 +114,13 @@ const DraggableClothingList: React.FC<DraggableClothingListProps> = ({
       }
     ]}>
       <DraggableFlatList
-        data={items}
-        onDragEnd={({ data }) => onDragEnd(data)}
+        data={clothescreateOutfit}
+        onDragEnd={handleDragEnd}
         keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
-        scrollEnabled={true}
-        nestedScrollEnabled={true}
-        showsVerticalScrollIndicator={true}
+        nestedScrollEnabled={true} // Désactive le défilement imbriqué
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );

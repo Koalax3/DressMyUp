@@ -1,32 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { supabase } from '../../constants/Supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClothing } from '../../contexts/ClothingContext';
+import { useOutfit } from '@/contexts/OutfitContext';
 import { ClothingItem, ClothingSubType, ClothingType, Outfit } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
-import { Picker } from '@react-native-picker/picker';
 import ImagePicker from '../../components/ImagePicker';
-import { decode } from 'base64-arraybuffer';
 import * as OutfitService from '../../services/outfitService';
 import * as StorageService from '../../services/storageService';
-import * as ClothingService from '../../services/clothingService';
 import { occasions } from '@/constants/Outfits';
-import { subtypesByType } from '@/constants/Clothes';
 import GenderSelector from '@/components/GenderSelector';
 import { associateClothesToOutfit } from '@/services/clotheOutfitsService';
-import ClotheView from '@/components/ClotheView';
 import { MatchType } from '@/components/ClotheView';
 import DraggableClothingList from '@/components/DraggableClothingList';
 import EmptyWardrobeModal from '@/components/EmptyWardrobeModal';
 import GenericSelector from '@/components/GenericSelector';
-import { ColorsTheme } from '@/constants/Colors';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import SeasonSelector from '@/components/SeasonSelector';
 import Header from '@/components/Header';
+import Toast from 'react-native-toast-message';
 
 // Type pour les vêtements avec position
 type ClothingWithPosition = ClothingItem & { position?: number };
@@ -35,28 +30,24 @@ type Season = 'all' | 'spring' | 'summer' | 'fall' | 'winter';
 export default function CreateOutfitScreen() {
   const { user } = useAuth();
   const { clothes: clothesFromContext, isLoading: isLoadingClothes, refreshClothes, hasClothes } = useClothing();
+  const { clothescreateOutfit, setClothescreateOutfit } = useOutfit();
   const params = useLocalSearchParams();
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [season, setSeason] = useState<Season>('all');
   const [occasion, setOccasion] = useState<string | null>(null);
   const [gender, setGender] = useState('unisex');
-  const [clothes, setClothes] = useState<ClothingItem[]>([]);
-  const [selectedClothesIds, setSelectedClothesIds] = useState<string[]>([]);
-  const [selectedClothesWithPositions, setSelectedClothesWithPositions] = useState<ClothingWithPosition[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [outfitImage, setOutfitImage] = useState<string | null>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [matchStatus, setMatchStatus] = useState<MatchType>(MatchType.NONE);
   const [showEmptyWardrobeModal, setShowEmptyWardrobeModal] = useState(false);
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
-
   // Utiliser les vêtements du contexte
   useEffect(() => {
     if (clothesFromContext.length > 0) {
-      setClothes(clothesFromContext);
       setLoading(false);
       setShowEmptyWardrobeModal(false);
     } else if (!isLoadingClothes) {
@@ -66,63 +57,47 @@ export default function CreateOutfitScreen() {
     }
   }, [clothesFromContext, isLoadingClothes, loading]);
 
-  // Mettre à jour selectedClothesWithPositions quand selectedClothesIds ou clothes changent
-  useEffect(() => {
-    if (selectedClothesIds.length > 0 && clothes.length > 0) {
-      const clothesWithPositions = selectedClothesIds.map((id, index) => {
-        const clotheItem = clothes.find(c => c.id === id);
-        return clotheItem ? { ...clotheItem, position: index } : null;
-      }).filter(Boolean) as ClothingWithPosition[];
-      
-      setSelectedClothesWithPositions(clothesWithPositions);
-    } else {
-      setSelectedClothesWithPositions([]);
-    }
-  }, [selectedClothesIds, clothes]);
-
   useFocusEffect(
     React.useCallback(() => {
       if (user) {
-        // Rafraîchir les vêtements depuis le contexte si nécessaire
         if (clothesFromContext.length === 0 && !isLoadingClothes) {
           refreshClothes();
         }
         if (!hasClothes && !showEmptyWardrobeModal) {
           setShowEmptyWardrobeModal(true);
         }
-        // Ajouter un vêtement spécifique à la sélection
         if (params.selectItem) {
-          setSelectedClothesIds(prev => 
-            prev.includes(params.selectItem as string) 
-              ? prev 
-              : [...prev, params.selectItem as string]
-          );
+          const newClothes = [...clothescreateOutfit];
+          if (!newClothes.find(item => item.id === params.selectItem)) {
+            const selectedItem = clothesFromContext.find(item => item.id === params.selectItem);
+            if (selectedItem) {
+              newClothes.push({ ...selectedItem, position: newClothes.length });
+              setClothescreateOutfit(newClothes);
+            }
+          }
         }
         
-        // Récupérer les vêtements sélectionnés depuis l'écran de sélection
         if (params.selectedClothes && params.returnFromSelect === 'true') {
-          // Récupérer les vêtements sélectionnés
           const selectedIds = (params.selectedClothes as string).split(',').filter(id => id !== '');
-          setSelectedClothesIds(selectedIds);
+          const newClothes = selectedIds.map((id, index) => {
+            const clotheItem = clothesFromContext.find(c => c.id === id);
+            return clotheItem ? { ...clotheItem, position: index } : null;
+          }).filter(Boolean) as ClothingWithPosition[];
           
-          // Récupérer les autres informations du formulaire
+          setClothescreateOutfit(newClothes);
+          
           if (params.formName) setName(params.formName as string);
           if (params.formDescription) setDescription(params.formDescription as string);
           if (params.formSeason) setSeason(params.formSeason as Season);
           if (params.formOccasion) setOccasion(params.formOccasion as string);
           if (params.formGender) setGender(params.formGender as string);
           if (params.formImage && params.formImage !== '') setOutfitImage(params.formImage as string);
-        } else if (params.selectedClothes && !params.returnFromSelect) {
-          // Si on revient pour la première fois de l'écran de sélection, on récupère seulement les vêtements
-          const selectedIds = (params.selectedClothes as string).split(',').filter(id => id !== '');
-          setSelectedClothesIds(selectedIds);
         }
       }
     }, [user, params.selectItem, params.selectedClothes, params.returnFromSelect, params.formName, params.formDescription, params.formSeason, params.formOccasion, params.formGender, params.formImage, clothesFromContext, isLoadingClothes])
   );
 
   const navigateToSelectClothes = () => {
-    // Sauvegarder l'état du formulaire avant la navigation
     router.push({
       pathname: '/wardrobe/select',
       params: { 
@@ -131,7 +106,7 @@ export default function CreateOutfitScreen() {
         formSeason: season,
         formOccasion: occasion,
         formImage: outfitImage || '',
-        enableMatching: 'true' // Activer la fonctionnalité de matching
+        enableMatching: 'true'
       }
     });
   };
@@ -162,7 +137,7 @@ export default function CreateOutfitScreen() {
   const saveOutfit = async () => {
     if (!user) return;
     
-    if (!name || selectedClothesIds.length === 0) {
+    if (!name || clothescreateOutfit.length === 0) {
       Alert.alert('Erreur', 'Veuillez donner un nom à votre tenue et sélectionner au moins un vêtement');
       return;
     }
@@ -170,7 +145,6 @@ export default function CreateOutfitScreen() {
     setSaving(true);
 
     try {
-      // Étape 1: Télécharger l'image si elle existe
       let imageUrl: string | undefined = undefined;
       if (outfitImage) {
         const uploadedUrl = await uploadImage();
@@ -179,7 +153,6 @@ export default function CreateOutfitScreen() {
         }
       }
 
-      // Étape 2: Créer la tenue
       const outfitData = {
         name,
         description: description || undefined,
@@ -198,42 +171,31 @@ export default function CreateOutfitScreen() {
 
       const outfitId = newOutfit.id;
 
-      // Étape 3: Associer les vêtements à la tenue avec leurs positions
-      // On trie les vêtements selon leurs positions dans selectedClothesWithPositions
-      const clothingIdsWithPositions = selectedClothesWithPositions.map(item => ({
-        id: item.id,
-        position: item.position || 0
-      }));
-      
-      // On trie les ids par position
-      const sortedClothingIds = clothingIdsWithPositions
+      const clothingIds = clothescreateOutfit
         .sort((a, b) => (a.position || 0) - (b.position || 0))
         .map(item => item.id);
 
       const success = await associateClothesToOutfit(
         outfitId,
-        sortedClothingIds
+        clothingIds
       );
 
       if (!success) {
         console.error('Erreur lors de l\'association des vêtements à la tenue');
       }
 
-      Alert.alert(
-        'Succès',
-        'Tenue créée avec succès!',
-        [{ text: 'OK', onPress: () => {
-          setName('');
-          setDescription('');
-          setSelectedClothesIds([]);
-          setSelectedClothesWithPositions([]);
-          setOutfitImage(null);
-          router.replace({
-            pathname: '/outfit/[id]',
-            params: { id: outfitId }
-          });
-        }}]
-      );
+      Toast.show({
+        text1: 'Tenue créée avec succès!',
+        type: 'success'
+      });
+      setName('');
+      setDescription('');
+      setClothescreateOutfit([]);
+      setOutfitImage(null);
+      router.replace({
+        pathname: '/outfit/[id]',
+        params: { id: outfitId }
+      });
     } catch (error) {
       console.error('Erreur:', error);
       Alert.alert('Erreur', 'Une erreur s\'est produite. Veuillez réessayer.');
@@ -315,22 +277,12 @@ export default function CreateOutfitScreen() {
         </View>
 
         {/* Vêtements sélectionnés */}
-        {selectedClothesWithPositions.length > 0 && (
+        {clothescreateOutfit.length > 0 && (
           <View style={styles.selectedSection}>
             <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Vêtements sélectionnés</Text>
             <Text style={[styles.helperText, { color: colors.text.light }]}>Maintenez et faites glisser pour réorganiser</Text>
             <View style={styles.draggableListContainer}>
-              <DraggableClothingList 
-                items={selectedClothesWithPositions} 
-                onDragEnd={(data) => {
-                  setSelectedClothesWithPositions(data);
-                  setSelectedClothesIds(data.map(item => item.id));
-                }}
-                onRemoveItem={(id) => {
-                  setSelectedClothesWithPositions(prev => prev.filter(item => item.id !== id));
-                  setSelectedClothesIds(prev => prev.filter(itemId => itemId !== id));
-                }}
-              />
+              <DraggableClothingList />
             </View>
           </View>
         )}
@@ -342,7 +294,7 @@ export default function CreateOutfitScreen() {
           >
             <Ionicons name="shirt-outline" size={20} color={colors.white} style={{ marginRight: 8 }} />
             <Text style={[styles.wardrobeButtonText, { color: colors.white }]}>
-              {selectedClothesIds.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
+              {clothescreateOutfit.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
             </Text>
           </TouchableOpacity>
         </View>

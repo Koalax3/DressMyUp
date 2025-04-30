@@ -12,6 +12,7 @@ import ClotheView from '@/components/ClotheView';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ColorsTheme, getThemeColors } from '@/constants/Colors';
 import SearchBar from '@/components/SearchBar';
+import { useOutfit } from '@/contexts/OutfitContext';
 
 type WardrobeSelectParams = {
   multiple?: string;
@@ -30,11 +31,8 @@ export default function WardrobeSelectScreen() {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
   const params = useLocalSearchParams<WardrobeSelectParams>();
-  
-  const multiple = params.multiple === 'true';
+  const { clothescreateOutfit, setClothescreateOutfit } = useOutfit();
   const enableMatching = params.enableMatching === 'true';
-  const initialSelectedIds = params.initialSelected ? JSON.parse(params.initialSelected as string) : [];
-  
   const [clothes, setClothes] = useState<ClothingItem[]>([]);
   const [filteredClothes, setFilteredClothes] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +47,7 @@ export default function WardrobeSelectScreen() {
     materials: [],
     colorFilterMode: 'differentItems'
   });
-  const [selectedClothes, setSelectedClothes] = useState<string[]>(initialSelectedIds);
+  const [selectedClothes, setSelectedClothes] = useState<string[]>(clothescreateOutfit.map(clothe => clothe.id));
 
   const fetchClothes = async () => {
     if (!user) return;
@@ -196,26 +194,8 @@ export default function WardrobeSelectScreen() {
   };
 
   const confirmSelection = () => {
-    const formName = params.formName || '';
-    const formDescription = params.formDescription || '';
-    const formSeason = params.formSeason || '';
-    const formOccasion = params.formOccasion || '';
-    const formImage = params.formImage || '';
-
-    const createRoute = '/(tabs)/create' as const;
-    
-    router.push({
-      pathname: createRoute,
-      params: { 
-        selectedClothes: selectedClothes.join(','),
-        returnFromSelect: 'true',
-        formName,
-        formDescription,
-        formSeason,
-        formOccasion,
-        formImage
-      }
-    });
+    setClothescreateOutfit(selectedClothes.map(id => clothes.find(c => c.id === id)!));
+    router.back();
   };
 
   const getFilterCount = () => {

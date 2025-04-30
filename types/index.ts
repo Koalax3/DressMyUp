@@ -31,13 +31,13 @@ export type ClothingSubType =
     image_url: string;
     reference?: string;
     created_at: string;
-    
 };
 
 export type ClothingItem = CreateClothingItem & {
   id: string;
   clothe?: ClothingItem;
 }
+export type ClothingWithPosition = ClothingItem & { position?: number };
 
 export type Outfit = {
   id: string;

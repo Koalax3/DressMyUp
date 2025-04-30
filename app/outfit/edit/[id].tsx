@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { useOutfit } from '@/contexts/OutfitContext';
 import { ClothingItem } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ type Season = 'all' | 'spring' | 'summer' | 'fall' | 'winter';
 
 export default function EditOutfitScreen() {
   const { user } = useAuth();
+  const { clothescreateOutfit, setClothescreateOutfit } = useOutfit();
   const params = useLocalSearchParams();
   const outfitId = params.id as string;
   const { isDarkMode } = useTheme();
@@ -37,8 +39,6 @@ export default function EditOutfitScreen() {
   const [isPublic, setIsPublic] = useState(true);
   const [gender, setGender] = useState('unisex');
   const [clothes, setClothes] = useState<ClothingItem[]>([]);
-  const [selectedClothesIds, setSelectedClothesIds] = useState<string[]>([]);
-  const [selectedClothesWithPositions, setSelectedClothesWithPositions] = useState<ClothingWithPosition[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [outfitImage, setOutfitImage] = useState<string | null>(null);
@@ -50,41 +50,35 @@ export default function EditOutfitScreen() {
       fetchOutfitDetails();
       fetchClothes();
     }
+    return () => {
+      setClothescreateOutfit([]);
+    };
   }, [outfitId, user]);
-
-  // Mettre à jour selectedClothesWithPositions quand selectedClothesIds ou clothes changent
-  useEffect(() => {
-    if (selectedClothesIds.length > 0 && clothes.length > 0) {
-      const clothesWithPositions = selectedClothesIds.map((id, index) => {
-        const clotheItem = clothes.find(c => c.id === id);
-        return clotheItem ? { ...clotheItem, position: index } : null;
-      }).filter(Boolean) as ClothingWithPosition[];
-      
-      setSelectedClothesWithPositions(clothesWithPositions);
-    } else {
-      setSelectedClothesWithPositions([]);
-    }
-  }, [selectedClothesIds, clothes]);
 
   useFocusEffect(
     React.useCallback(() => {
       if (user) {
-        // Ajouter un vêtement spécifique à la sélection
         if (params.selectItem) {
-          setSelectedClothesIds(prev => 
-            prev.includes(params.selectItem as string) 
-              ? prev 
-              : [...prev, params.selectItem as string]
-          );
+          const newClothes = [...clothescreateOutfit];
+          if (!newClothes.find(item => item.id === params.selectItem)) {
+            const selectedItem = clothes.find(item => item.id === params.selectItem);
+            if (selectedItem) {
+              newClothes.push({ ...selectedItem, position: newClothes.length });
+              console.log(newClothes);
+              setClothescreateOutfit(newClothes);
+            }
+          }
         }
         
-        // Récupérer les vêtements sélectionnés depuis l'écran de sélection
         if (params.selectedClothes && params.returnFromSelect === 'true') {
-          // Récupérer les vêtements sélectionnés
           const selectedIds = (params.selectedClothes as string).split(',').filter(id => id !== '');
-          setSelectedClothesIds(selectedIds);
+          const newClothes = selectedIds.map((id, index) => {
+            const clotheItem = clothes.find(c => c.id === id);
+            return clotheItem ? { ...clotheItem, position: index } : null;
+          }).filter(Boolean) as ClothingWithPosition[];
           
-          // Récupérer les autres informations du formulaire
+          setClothescreateOutfit(newClothes);
+          
           if (params.formName) setName(params.formName as string);
           if (params.formDescription) setDescription(params.formDescription as string);
           if (params.formSeason) setSeason(params.formSeason as Season);
@@ -96,7 +90,7 @@ export default function EditOutfitScreen() {
       }
     }, [user, params.selectItem, params.selectedClothes, params.returnFromSelect, params.formName, 
         params.formDescription, params.formSeason, params.formOccasion, params.formImage, 
-        params.formIsPublic, params.formGender])
+        params.formIsPublic, params.formGender, clothes])
   );
 
   const fetchOutfitDetails = async () => {
@@ -113,7 +107,6 @@ export default function EditOutfitScreen() {
         return;
       }
 
-      // Remplir le formulaire avec les données existantes
       setName(outfitDetails.name);
       setDescription(outfitDetails.description || '');
       setSeason((outfitDetails.season || 'all') as Season);
@@ -126,22 +119,22 @@ export default function EditOutfitScreen() {
         setInitialOutfitImage(outfitDetails.image_url);
       }
       
-      // Récupérer les vêtements associés
       if (outfitDetails.clothes) {
-        // Trier les vêtements par position si disponible
         const sortedClothes = [...outfitDetails.clothes].sort((a: any, b: any) => {
           const posA = a.position !== undefined ? a.position : 999;
           const posB = b.position !== undefined ? b.position : 999;
           return posA - posB;
         });
         
-        // Extraire les IDs des vêtements
-        const clothingIds = sortedClothes.map((item: any) => {
-          // L'ID peut être dans clothe_id (pour clothes_outfits) ou directement dans id
-          return item.clothe_id || (item.clothe && item.clothe.id) || item.id;
+        const clothesWithPositions = sortedClothes.map((item: any, index: number) => {
+          const clotheItem = item.clothe || item;
+          return {
+            ...clotheItem,
+            position: index
+          };
         });
         
-        setSelectedClothesIds(clothingIds);
+        setClothescreateOutfit(clothesWithPositions);
       }
     } catch (error) {
       console.error('Erreur lors de la récupération des détails de la tenue:', error);
@@ -173,7 +166,7 @@ export default function EditOutfitScreen() {
     router.push({
       pathname: '/wardrobe/select' as any,
       params: { 
-        selectedIds: selectedClothesIds.join(','),
+        selectedIds: clothescreateOutfit.map(item => item.id).join(','),
         formName: name,
         formDescription: description,
         formSeason: season,
@@ -214,7 +207,7 @@ export default function EditOutfitScreen() {
   const updateOutfit = async () => {
     if (!user || !outfitId) return;
     
-    if (!name || selectedClothesIds.length === 0) {
+    if (!name || clothescreateOutfit.length === 0) {
       Toast.show({
         type: 'error',
         text1: 'Veuillez donner un nom à votre tenue et sélectionner au moins un vêtement'
@@ -260,14 +253,8 @@ export default function EditOutfitScreen() {
       }
 
       // Étape 3: Mettre à jour les vêtements associés avec leurs positions
-      // On trie les vêtements selon leurs positions dans selectedClothesWithPositions
-      const clothingIdsWithPositions = selectedClothesWithPositions.map(item => ({
-        id: item.id,
-        position: item.position || 0
-      }));
-      
-      // On trie les ids par position
-      const sortedClothingIds = clothingIdsWithPositions
+      // On trie les vêtements selon leurs positions dans clothescreateOutfit
+      const sortedClothingIds = clothescreateOutfit
         .sort((a, b) => (a.position || 0) - (b.position || 0))
         .map(item => item.id);
 
@@ -281,7 +268,7 @@ export default function EditOutfitScreen() {
       }
 
       // Mettre à jour les positions
-      const positionsToUpdate = selectedClothesWithPositions.map(item => ({
+      const positionsToUpdate = clothescreateOutfit.map(item => ({
         clotheId: item.id,
         position: item.position || 0
       }));
@@ -304,9 +291,7 @@ export default function EditOutfitScreen() {
       setSaving(false);
     }
   };
-
-  const selectedClothesItems = clothes.filter(item => selectedClothesIds.includes(item.id));
-
+  
   if (loading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
@@ -399,17 +384,7 @@ export default function EditOutfitScreen() {
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Vêtements</Text>
           <View style={styles.draggableListContainer}>
-            <DraggableClothingList
-              items={selectedClothesWithPositions}
-              onDragEnd={(data) => {
-                setSelectedClothesWithPositions(data);
-                setSelectedClothesIds(data.map(item => item.id));
-              }}
-              onRemoveItem={(id) => {
-                setSelectedClothesWithPositions(prev => prev.filter(item => item.id !== id));
-                setSelectedClothesIds(prev => prev.filter(itemId => itemId !== id));
-              }}
-            />
+            <DraggableClothingList/>
           </View>
         </View>
 
@@ -422,7 +397,7 @@ export default function EditOutfitScreen() {
         >
           <Ionicons name="shirt-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
           <Text style={styles.wardrobeButtonText}>
-            {selectedClothesIds.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
+            {clothescreateOutfit.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
           </Text>
         </TouchableOpacity>
 

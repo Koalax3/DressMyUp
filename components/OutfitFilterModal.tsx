@@ -5,6 +5,7 @@ import { occasions, seasons, genders } from '@/constants/Outfits';
 import GenericSelector from './GenericSelector';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useFilter } from '@/contexts/FilterContext';
 
 export type OutfitFilters = {
   seasons: string[];
@@ -28,13 +29,13 @@ const OutfitFilterModal = ({
 }: OutfitFilterModalProps) => {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
-
+  const { resetFilters: resetFiltersContext } = useFilter();
   // État local pour les filtres
   const [seasonsFilter, setSeasonsFilter] = useState<string[]>(currentFilters.seasons);
   const [occasionsFilter, setOccasionsFilter] = useState<string[]>(currentFilters.occasions);
   const [gendersFilter, setGendersFilter] = useState<string[]>(currentFilters.genders || []);
   const [withFavoritesFilter, setwithFavoritesFilter] = useState<boolean>(currentFilters.withFavorites);
-  
+
   useEffect(() => {
     if (visible) {
       // Réinitialiser les états locaux avec les filtres actuels

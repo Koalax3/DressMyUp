@@ -170,11 +170,18 @@ const ClotheFilterModal = ({
     setColorFilterMode(prev => prev === 'sameItem' ? 'differentItems' : 'sameItem');
   };
 
-  const applyFilters = () => {
-    onApplyFilters({
-      ...localFilters,
-      colorFilterMode
-    });
+  const applyFilters = (empty = false) => {
+    if (empty) {
+      onApplyFilters({
+        ...defaultFilters,
+        colorFilterMode
+      });
+    } else {
+      onApplyFilters({
+        ...localFilters,
+        colorFilterMode
+      });
+    }
     onClose();
   };
 
@@ -390,7 +397,7 @@ const ClotheFilterModal = ({
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={[{flex: 1}, { backgroundColor: colors.background.main }]} showsVerticalScrollIndicator={false}>
+        <View style={[{flex: 1}, { backgroundColor: colors.background.main }]}>
           {activeTab === 'brands' ? (
             <>
               {uniqueBrands.length > 0 ? (
@@ -448,7 +455,7 @@ const ClotheFilterModal = ({
               )}
             </>
           ) : null}
-        </ScrollView>
+        </View>
 
         <View style={[styles.footer, { 
           borderTopColor: colors.text.lighter,
@@ -492,7 +499,7 @@ const ClotheFilterModal = ({
             
             <TouchableOpacity 
               style={[styles.applyButton, { backgroundColor: colors.primary.main }]}
-              onPress={applyFilters}
+              onPress={() => applyFilters()}
             >
               <Text style={[styles.applyButtonText, { color: colors.text.bright }]}>Appliquer</Text>
             </TouchableOpacity>

@@ -24,6 +24,7 @@ type FilterContextType = {
   resetOutfitFilters: () => void;
   getClothesFilterCount: () => number;
   getOutfitFilterCount: () => number;
+  resetFilters: () => void;
   
   // Recherche commune
   searchText: string;
@@ -74,6 +75,11 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     setOutfitFilters({ seasons: [], occasions: [], genders: [], withFavorites: false });
   };
   
+  const resetFilters = () => {
+    resetClothesFilters();
+    resetOutfitFilters();
+  };
+
   const getClothesFilterCount = () => {
     return clothesAdvancedFilters.brands.length + clothesAdvancedFilters.colors.length + 
            (clothesAdvancedFilters.patterns ? clothesAdvancedFilters.patterns.length : 0);
@@ -83,7 +89,6 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
     return outfitFilters.seasons.length + outfitFilters.occasions.length + 
            outfitFilters.genders.length + (outfitFilters.withFavorites ? 1 : 0);
   };
-  
   return (
     <FilterContext.Provider value={{
       clothesFilter,
@@ -101,7 +106,8 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
       getClothesFilterCount,
       getOutfitFilterCount,
       searchText,
-      setSearchText
+      setSearchText,
+      resetFilters
     }}>
       {children}
     </FilterContext.Provider>

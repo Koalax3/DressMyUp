@@ -9,6 +9,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { ScrollProvider } from '../contexts/ScrollContext';
 import { FilterProvider } from '../contexts/FilterContext';
 import { ClothingProvider } from '@/contexts/ClothingContext';
+import { OutfitProvider } from '@/contexts/OutfitContext';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Toast from 'react-native-toast-message';
 import toastConfig from '../components/toastConfig';
@@ -58,17 +59,19 @@ function RootLayoutNav() {
       <CustomThemeProvider>
         <AuthProvider>
           <ClothingProvider>
-            <ScrollProvider>
-              <FilterProvider>
-                <GestureHandlerRootView style={{ flex: 1 }}>
-                  <Stack screenOptions={{ headerShown: false }}>
-                    <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-                    <Stack.Screen name="auth" options={{ headerShown: false }} />
-                  </Stack>
-                  <Toast config={toastConfig} />
-                </GestureHandlerRootView>
-              </FilterProvider>
-            </ScrollProvider>
+            <OutfitProvider>
+              <ScrollProvider>
+                <FilterProvider>
+                  <GestureHandlerRootView style={{ flex: 1 }}>
+                    <Stack screenOptions={{ headerShown: false }}>
+                      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+                      <Stack.Screen name="auth" options={{ headerShown: false }} />
+                    </Stack>
+                    <Toast config={toastConfig} />
+                  </GestureHandlerRootView>
+                </FilterProvider>
+              </ScrollProvider>
+            </OutfitProvider>
           </ClothingProvider>
         </AuthProvider>
       </CustomThemeProvider>

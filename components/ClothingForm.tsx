@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView } from 'react-native';
-import { ClothingSubType, ClothingType } from '@/types';
+import React, { useState, useEffect, useCallback } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, ScrollView, ActivityIndicator, Alert, SafeAreaView, View, Modal, Image } from 'react-native';
+import { ClothingSubType, ClothingType, ClothingItem } from '@/types';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import ImagePicker from './ImagePicker';
@@ -20,6 +20,7 @@ import BrandSelector from './BrandSelector';
 import { useClothing } from '@/contexts/ClothingContext';
 import Toast from 'react-native-toast-message';
 import { ClothingService } from '@/services';
+import debounce from 'lodash/debounce';
 
 export type ClothingFormData = {
   name: string;
@@ -54,7 +55,6 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
   const { user } = useAuth();
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
-
   // États du formulaire
   const [name, setName] = useState(initialData.name || '');
   const [reference, setReference] = useState(initialData.reference || '');
@@ -68,6 +68,50 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
   const [image, setImage] = useState<string | null>(initialData.image_url || null);
   const [imageChanged, setImageChanged] = useState(false);
   const [originalImage, setOriginalImage] = useState<string | null>(initialData.image_url || null);
+  const [isCheckingReference, setIsCheckingReference] = useState(false);
+  const [foundItem, setFoundItem] = useState<ClothingItem | null>(null);
+  const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+
+  // Fonction de vérification de référence avec debounce
+  const checkReference = useCallback(
+    debounce(async (ref: string) => {
+      if (!ref) {
+        setFoundItem(null);
+        return;
+      }
+      setIsCheckingReference(true);
+      try {
+        const existingItem = await ClothingService.searchClothingByReference(ref);
+        if (existingItem) {
+          setFoundItem(existingItem);
+          setShowSuggestionModal(true);
+        } else {
+          setFoundItem(null);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la vérification de la référence:', error);
+      } finally {
+        setIsCheckingReference(false);
+      }
+    }, 500),
+    []
+  );
+
+  const handleAutoComplete = () => {
+    if (foundItem) {
+      setImage(foundItem.image_url || null);
+      setOriginalImage(foundItem.image_url || null);
+      setName(foundItem.name);
+      setBrand(foundItem.brand || null);
+      setType(foundItem.type);
+      setSubtype(foundItem.subtype || null);
+      setColor(foundItem.color);
+      setPattern(foundItem.pattern || 'plain');
+      setMaterial(foundItem.material || null);
+      setFit(foundItem.fit || null);
+      setShowSuggestionModal(false);
+    }
+  };
 
   // Mettre à jour les états quand initialData change
   useEffect(() => {
@@ -84,6 +128,11 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
     setOriginalImage(initialData.image_url || null);
     setImageChanged(false);
   }, [initialData]);
+
+  // Vérifier la référence quand elle change
+  useEffect(() => {
+    checkReference(reference);
+  }, [reference, checkReference]);
 
   // Obtenir les sous-types pour le type sélectionné
   const availableSubtypes = type ? subtypesByType[type] || {} : {};
@@ -159,20 +208,26 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
           />
         )}
       </Text>
-      <TextInput
-        style={[
-          styles.input,
-          { 
-            backgroundColor: colors.gray,
-            color: colors.text.main,
-            borderColor: reference ? colors.primary.main : undefined
-          }
-        ]}
-        placeholder="Référence (optionnel)"
-        value={reference}
-        onChangeText={setReference}
-        placeholderTextColor={colors.text.light}
-      />
+      <View style={styles.referenceContainer}>
+        <TextInput
+          style={[
+            styles.input,
+            { 
+              backgroundColor: colors.gray,
+              color: colors.text.main,
+              borderColor: reference ? colors.primary.main : undefined,
+              flex: 1
+            }
+          ]}
+          placeholder="Référence (optionnel)"
+          value={reference}
+          onChangeText={setReference}
+          placeholderTextColor={colors.text.light}
+        />
+        {isCheckingReference && (
+          <ActivityIndicator size="small" color={colors.primary.main} style={styles.checkingIndicator} />
+        )}
+      </View>
 
       <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Image*</Text>
       <ImagePicker 
@@ -228,7 +283,7 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
         onColorSelect={setColor}
       />
 
-<Text style={[styles.label, { color: colors.text.main }]}>Marque</Text>
+      <Text style={[styles.label, { color: colors.text.main }]}>Marque</Text>
       <BrandSelector
         selectedBrand={brand || null}
         onBrandSelect={setBrand}
@@ -280,6 +335,45 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
           </Text>
         )}
       </TouchableOpacity>
+
+      <Modal
+        visible={showSuggestionModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSuggestionModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background.main }]}>
+            <Text style={[styles.modalTitle, { color: colors.text.main }]}>Produit trouvé</Text>
+            {foundItem && (
+              <>
+                <Image source={{ uri: foundItem.image_url }} style={styles.modalImage} />
+                <Text style={[styles.modalText, { color: colors.text.main }]}>{foundItem.name}</Text>
+                <Text style={[styles.modalText, { color: colors.text.light }]}>
+                  {types[foundItem.type]} - {foundItem.subtype && subtypesByType[foundItem.type][foundItem.subtype]}
+                </Text>
+                {foundItem.brand && (
+                  <Text style={[styles.modalText, { color: colors.text.light }]}>{foundItem.brand}</Text>
+                )}
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: colors.gray }]}
+                    onPress={() => setShowSuggestionModal(false)}
+                  >
+                    <Text style={[styles.modalButtonText, { color: colors.text.main }]}>Annuler</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.modalButton, { backgroundColor: colors.primary.main }]}
+                    onPress={handleAutoComplete}
+                  >
+                    <Text style={[styles.modalButtonText, { color: colors.white }]}>Compléter</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -325,6 +419,60 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+  },
+  referenceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  checkingIndicator: {
+    position: 'absolute',
+    right: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  modalImage: {
+    width: 150,
+    height: 150,
+    borderRadius: 10,
+    marginBottom: 15,
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 5,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginTop: 20,
+    gap: 10,
+  },
+  modalButton: {
+    flex: 1,
+    padding: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 
@@ -383,7 +531,6 @@ const ClothingFormWrapper: React.FC<ClothingFormWrapperProps> = ({
         imageUrl = data.publicUrl;
         setUploadingImage(false);
       }
-      
       if (mode === 'add') {
         // Insérer dans la base de données
         const newClothing = await ClothingService.createClothing(user.id, {

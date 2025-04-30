@@ -64,7 +64,7 @@ export const ClothingProvider: React.FC<ClothingProviderProps> = ({ children }) 
       console.error('Erreur lors du chargement des vêtements:', err);
     } finally {
       setIsLoading(false);
-      setRefreshing(true);
+      setRefreshing(false);
     }
   };
 
