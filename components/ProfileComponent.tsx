@@ -11,6 +11,7 @@ import { ColorsTheme } from '@/constants/Colors';
 import { DEFAULT_USER_AVATAR } from '@/constants/Users';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useTranslation } from '@/i18n/useTranslation';
 
 type SortOption = 'recent' | 'oldest' | 'popular';
 
@@ -44,6 +45,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
   const [isFollowing, setIsFollowing] = useState(false);
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (userId) {
@@ -144,11 +146,11 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
 
   const handleSignOut = async () => {
     Alert.alert(
-      'Déconnexion',
-      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      t('auth.logout'),
+      t('auth.logoutConfirmation'),
       [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Déconnexion', style: 'destructive', onPress: async () => {
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('auth.logout'), style: 'destructive', onPress: async () => {
           await signOut();
           router.replace('/auth/login');
         }},
@@ -173,7 +175,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
       }));
     } catch (error) {
       console.error('Erreur lors du suivi/désabonnement:', error);
-      Alert.alert('Erreur', 'Une erreur s\'est produite. Veuillez réessayer.');
+      Alert.alert(t('errors.generic'), t('errors.tryAgain'));
     }
   };
 
@@ -214,7 +216,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
       }
     } catch (error) {
       console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Une erreur s\'est produite. Veuillez réessayer.');
+      Alert.alert(t('errors.generic'), t('errors.uploadError'));
     } finally {
       setUploadingAvatar(false);
     }
@@ -239,7 +241,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
   if (!profileUser) {
     return (
       <View style={styles.loadingContainer}>
-        <Text>Utilisateur non trouvé</Text>
+        <Text>{t('profile.userNotFound')}</Text>
       </View>
     );
   }
@@ -299,7 +301,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
                       {stats.outfitsCount}
                     </Text>
                     <Text style={[styles.statLabel, { color: colors.text.light }]}>
-                      Tenues
+                      {t('profile.outfits')}
                     </Text>
                   </View>
                   <View style={styles.statItem}>
@@ -307,7 +309,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
                       {stats.likesCount}
                     </Text>
                     <Text style={[styles.statLabel, { color: colors.text.light }]}>
-                      Likes
+                      {t('profile.likes')}
                     </Text>
                   </View>
                   <TouchableOpacity 
@@ -322,7 +324,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
                       {stats.followersCount}
                     </Text>
                     <Text style={[styles.statLabel, { color: colors.text.light }]}>
-                      Fans
+                      {t('profile.fans')}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
@@ -337,7 +339,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
                       {stats.followingCount}
                     </Text>
                     <Text style={[styles.statLabel, { color: colors.text.light }]}>
-                      Idoles
+                      {t('profile.idoles')}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -364,7 +366,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
                         { color: isFollowing ? colors.primary.main : colors.text.bright }
                       ]}
                     >
-                      {isFollowing ? 'Abonné(e)' : 'Suivre'}
+                      {isFollowing ? t('profile.following') : t('profile.follow')}
                     </Text>
                   </TouchableOpacity>
                 )}
@@ -388,7 +390,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
                     sortOption === 'recent' && { color: colors.white }
                   ]}
                 >
-                  Plus récent
+                  {t('profile.recent')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity 
@@ -407,7 +409,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
                     sortOption === 'popular' && { color: colors.white }
                   ]}
                 >
-                  Plus populaire
+                  {t('profile.popular')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity 
@@ -425,7 +427,7 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
                     sortOption === 'oldest' && { color: colors.white }
                   ]}
                 >
-                  Plus ancien
+                  {t('profile.oldest')}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -433,14 +435,14 @@ const ProfileComponent = ({ userId, isCurrentUser, onBackPress, hideLogoutButton
             {outfits.length === 0 && !loading && (
               <View style={styles.emptyContainer}>
                 <Text style={[styles.emptyText, { color: colors.text.main }]}>
-                  {isCurrentUser ? "Vous n'avez pas encore de tenues" : "Cet utilisateur n'a pas encore de tenues"}
+                  {isCurrentUser ? t('profile.noOutfits') : t('profile.noOutfitsUser')}
                 </Text>
                 {isCurrentUser && (
                   <TouchableOpacity 
                     style={[styles.createButton, { backgroundColor: colors.primary.main }]}
                     onPress={() => router.push('/outfit/create')}
                   >
-                    <Text style={styles.createButtonText}>Créer une tenue</Text>
+                    <Text style={styles.createButtonText}>{t('profile.createOutfit')}</Text>
                   </TouchableOpacity>
                 )}
               </View>

@@ -8,12 +8,14 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import { createClothing, uploadClothingImage } from '@/services/clothingService';
 import { useClothing } from '@/contexts/ClothingContext';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function AddClothingScreen() {
   const { user } = useAuth();
   const { clothingToCopy, setClothingToCopy } = useClothing();
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
   
   const [initialData, setInitialData] = useState<Partial<ClothingFormData>>({});
   console.log(initialData);
@@ -39,7 +41,7 @@ export default function AddClothingScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <Header title="Ajouter un vêtement" back />
+      <Header title={t('clothing.add')} back />
       <ClothingFormWrapper 
         initialData={initialData}
         mode="add"

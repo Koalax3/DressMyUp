@@ -9,11 +9,13 @@ import { UserService } from '@/services';
 import * as ImagePicker from 'expo-image-picker';
 import { useTheme } from '@/contexts/ThemeContext';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function EditProfileScreen() {
   const { user, updateProfile } = useAuth();
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
   
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
@@ -35,7 +37,7 @@ export default function EditProfileScreen() {
     if (username.trim() === '') {
       Toast.show({
         type: 'error',
-        text1: 'Le nom d\'utilisateur ne peut pas être vide'
+        text1: t('profile.usernameRequired')
       });
       return;
     }
@@ -48,14 +50,14 @@ export default function EditProfileScreen() {
       
       Toast.show({
         type: 'success',
-        text1: 'Profil mis à jour avec succès'
+        text1: t('success.profileUpdated')
       });
       router.back();
     } catch (error) {
       console.error('Erreur lors de la mise à jour du profil:', error);
       Toast.show({
         type: 'error',
-        text1: 'Une erreur s\'est produite lors de la mise à jour du profil'
+        text1: t('errors.profileUpdateError')
       });
     } finally {
       setIsLoading(false);
@@ -94,7 +96,7 @@ export default function EditProfileScreen() {
       console.error('Erreur:', error);
       Toast.show({
         type: 'error',
-        text1: 'Une erreur s\'est produite lors du téléchargement de l\'avatar'
+        text1: t('errors.avatarUploadError')
       });
     } finally {
       setUploadingAvatar(false);
@@ -107,7 +109,7 @@ export default function EditProfileScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text.main} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text.main }]}>Éditer le profil</Text>
+        <Text style={[styles.title, { color: colors.text.main }]}>{t('profile.editProfile')}</Text>
         <TouchableOpacity 
           style={[
             styles.saveButton, 
@@ -117,7 +119,7 @@ export default function EditProfileScreen() {
           onPress={handleSave}
           disabled={isLoading}
         >
-          <Text style={styles.saveButtonText}>Enregistrer</Text>
+          <Text style={styles.saveButtonText}>{t('common.save')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -155,7 +157,7 @@ export default function EditProfileScreen() {
       </View>
 
       <View style={styles.formContainer}>
-        <Text style={[styles.label, { color: colors.text.main }]}>Nom d'utilisateur</Text>
+        <Text style={[styles.label, { color: colors.text.main }]}>{t('profile.username')}</Text>
         <TextInput
           style={[
             styles.input, 
@@ -166,11 +168,11 @@ export default function EditProfileScreen() {
           ]}
           value={username}
           onChangeText={setUsername}
-          placeholder="Votre nom d'utilisateur"
+          placeholder={t('profile.usernamePlaceholder')}
           placeholderTextColor={colors.text.light}
         />
         
-        <Text style={[styles.label, { color: colors.text.main }]}>Biographie</Text>
+        <Text style={[styles.label, { color: colors.text.main }]}>{t('profile.bio')}</Text>
         <TextInput
           style={[
             styles.input, 
@@ -182,7 +184,7 @@ export default function EditProfileScreen() {
           ]}
           value={bio}
           onChangeText={setBio}
-          placeholder="Parlez-nous de vous..."
+          placeholder={t('profile.bioPlaceholder')}
           placeholderTextColor={colors.text.light}
           multiline={true}
           numberOfLines={4}

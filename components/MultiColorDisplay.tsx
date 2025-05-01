@@ -3,6 +3,7 @@ import { StyleSheet, View, Text } from 'react-native';
 import { COLORS } from '../constants/Clothes';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useTranslation } from '@/i18n/useTranslation';
 
 interface MultiColorDisplayProps {
   colorString: string | null;
@@ -15,6 +16,8 @@ const MultiColorDisplay: React.FC<MultiColorDisplayProps> = ({
 }) => {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
+  
   // Récupérer les objets de couleur pour l'affichage
   const getSelectedColorObjects = () => {
     if (!colorString) return [];
@@ -27,30 +30,30 @@ const MultiColorDisplay: React.FC<MultiColorDisplayProps> = ({
   // Préparation du texte d'affichage
   const getDisplayText = () => {
     if (!colorString || selectedColorObjects.length === 0) {
-      return "Aucune couleur";
+      return t('clothing.noColor');
     }
     
     if (selectedColorObjects.length === 1) {
-      return selectedColorObjects[0]?.name;
+      return t(`clothingColors.${selectedColorObjects[0]?.id}`);
     }
     
     if (selectedColorObjects.length === 2) {
-      return `${selectedColorObjects[0]?.name}, ${selectedColorObjects[1]?.name}`;
+      return `${t(`clothingColors.${selectedColorObjects[0]?.id}`)}, ${t(`clothingColors.${selectedColorObjects[1]?.id}`)}`;
     }
     
-    return `${selectedColorObjects[0]?.name}, ${selectedColorObjects[1]?.name} + ${selectedColorObjects.length - 2}`;
+    return `${t(`clothingColors.${selectedColorObjects[0]?.id}`)}, ${t(`clothingColors.${selectedColorObjects[1]?.id}`)} + ${selectedColorObjects.length - 2}`;
   };
 
   return (
     <View style={styles.container}>
       {selectedColorObjects.length > 0 && (
         <View style={styles.colorCirclesContainer}>
-          {selectedColorObjects.slice(0, 2).map((colorObj, index) => (
+          {selectedColorObjects.slice(0, 4).map((colorObj, index) => (
             <View 
               key={index}
               style={[
                 styles.colorCircle, 
-                index === 1 ? { marginLeft: -10, zIndex: -1 } : {}, 
+                index >= 1 ? { marginLeft: -10, zIndex: index * -1 } : {}, 
                 { 
                   backgroundColor: colorObj?.value === 'linear-gradient' 
                     ? 'transparent' 

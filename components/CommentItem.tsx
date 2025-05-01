@@ -8,6 +8,7 @@ import { ColorsTheme } from '@/constants/Colors';
 import { DEFAULT_USER_AVATAR } from '@/constants/Users';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useTranslation } from '@/i18n/useTranslation';
 
 interface CommentItemProps {
   comment: Comment & { user: User };
@@ -20,6 +21,7 @@ const CommentItem = ({ comment, currentUserId, outfitId, onCommentDeleted }: Com
   const [deleting, setDeleting] = React.useState(false);
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -28,11 +30,11 @@ const CommentItem = ({ comment, currentUserId, outfitId, onCommentDeleted }: Com
 
   const handleDeleteComment = () => {
     Alert.alert(
-      'Supprimer le commentaire',
-      'Êtes-vous sûr de vouloir supprimer ce commentaire?',
+      t('comments.deleteComment'),
+      t('comments.deleteCommentConfirmation'),
       [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Supprimer', style: 'destructive', onPress: confirmDeleteComment }
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: confirmDeleteComment }
       ]
     );
   };
@@ -46,11 +48,11 @@ const CommentItem = ({ comment, currentUserId, outfitId, onCommentDeleted }: Com
       if (success) {
         onCommentDeleted(comment.id);
       } else {
-        Alert.alert('Erreur', 'Impossible de supprimer ce commentaire.');
+        Alert.alert(t('errors.generic'), t('errors.commentDeleteFailed'));
       }
     } catch (error) {
       console.error('Erreur lors de la suppression du commentaire:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue lors de la suppression.');
+      Alert.alert(t('errors.generic'), t('errors.tryAgain'));
     } finally {
       setDeleting(false);
     }

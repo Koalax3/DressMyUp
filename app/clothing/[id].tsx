@@ -18,6 +18,7 @@ import Toast from 'react-native-toast-message';
 import Header from '@/components/Header';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function ClothingDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -28,6 +29,7 @@ export default function ClothingDetailScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
   
   // Récupérer le vêtement au chargement avec la fonction loadClothing qui gère les vêtements de tous les utilisateurs
   const fetchClothing = async () => {
@@ -39,7 +41,7 @@ export default function ClothingDetailScreen() {
       setClothingItem(clothing);
     } catch (error) {
       console.error('Erreur lors de la récupération du vêtement:', error);
-      Alert.alert('Erreur', 'Impossible de charger les détails du vêtement.');
+      Alert.alert(t('errors.generic'), t('clothing.loadingError'));
     } finally {
       setLoading(false);
     }
@@ -59,11 +61,11 @@ export default function ClothingDetailScreen() {
     if (!clothingItem) return;
     
     Alert.alert(
-      'Confirmation',
-      'Êtes-vous sûr de vouloir supprimer ce vêtement ?',
+      t('common.confirm'),
+      t('clothing.deleteConfirmation'),
       [
-        { text: 'Annuler', style: 'cancel' },
-        { text: 'Supprimer', style: 'destructive', onPress: deleteClothingItem }
+        { text: t('clothing.cancel'), style: 'cancel' },
+        { text: t('clothing.delete'), style: 'destructive', onPress: deleteClothingItem }
       ]
     );
   };
@@ -80,16 +82,16 @@ export default function ClothingDetailScreen() {
         deleteClothingFromContext(clothingItem.id);
         Toast.show({
           type: 'delete',
-          text1: 'Vêtement supprimé avec succès',
+          text1: t('clothing.deleteSuccess'),
         });
         setRefreshing(true);
         router.back();
       } else {
-        Alert.alert('Erreur', 'Impossible de supprimer ce vêtement. Veuillez réessayer.');
+        Alert.alert(t('errors.generic'), t('clothing.deleteError'));
       }
     } catch (error) {
       console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Une erreur s\'est produite. Veuillez réessayer.');
+      Alert.alert(t('errors.generic'), t('clothing.generalError'));
     } finally {
       setLoading(false);
     }
@@ -100,7 +102,7 @@ export default function ClothingDetailScreen() {
 
     try {
       await Share.share({
-        message: `Découvrez mon vêtement "${clothingItem.name}" sur DressMatch!`,
+        message: t('clothing.shareMessage', { name: clothingItem.name || '' }),
         url: clothingItem.image_url,
       });
     } catch (error) {
@@ -109,24 +111,33 @@ export default function ClothingDetailScreen() {
   };
 
   const getTypeLabel = (type: string) => {
-    return types[type] || type;
+    return t(`clothingTypes.${type}`) || type;
   };
 
   const getSubtypeLabel = (type: string, subtype?: string) => {
     if (!subtype) return '';
-    const subtypes = subtypesByType[type as keyof typeof subtypesByType];
-    return subtypes?.[subtype as keyof typeof subtypes] || subtype;
+    return t(`clothingSubtypes.${type}.${subtype}`) || subtype;
   };
 
   const getFitLabel = (fit?: string) => {
     if (!fit) return '';
-    return fits[fit] || fit;
+    return t(`clothingFits.${fit}`) || fit;
+  };
+
+  const getPatternLabel = (pattern: string | null): string => {
+    if (!pattern) return '';
+    return t(`clothingPatterns.${pattern}`) || pattern;
+  };
+
+  const getMaterialLabel = (material: string) => {
+    return t(`clothingMaterials.${material}`) || material;
   };
 
   if (loading) {
     return (
       <SafeAreaView style={[styles.loadingContainer, { backgroundColor: colors.background.main }]}>
         <ActivityIndicator size="large" color={colors.primary.main} />
+        <Text style={{ marginTop: 10, color: colors.text.main }}>{t('common.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -134,9 +145,9 @@ export default function ClothingDetailScreen() {
   if (!clothingItem) {
     return (
       <SafeAreaView style={[styles.errorContainer, { backgroundColor: colors.background.main }]}>
-        <Text style={[styles.errorText, { color: colors.text.main }]}>Vêtement introuvable</Text>
+        <Text style={[styles.errorText, { color: colors.text.main }]}>{t('clothing.notFound')}</Text>
         <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary.main }]} onPress={() => router.back()}>
-          <Text style={styles.buttonText}>Retour</Text>
+          <Text style={styles.buttonText}>{t('clothing.back')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -168,39 +179,39 @@ export default function ClothingDetailScreen() {
 
           <View style={styles.detailsContainer}>
             <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
-              <Text style={[styles.detailLabel, { color: colors.text.light }]}>Type</Text>
+              <Text style={[styles.detailLabel, { color: colors.text.light }]}>{t('clothing.typeLabel')}</Text>
               <Text style={[styles.detailValue, { color: colors.text.main }]}>{getTypeLabel(clothingItem.type)}</Text>
             </View>
             
             {clothingItem.subtype && (
               <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
-                <Text style={[styles.detailLabel, { color: colors.text.light }]}>Sous-type</Text>
+                <Text style={[styles.detailLabel, { color: colors.text.light }]}>{t('clothing.subtypeLabel')}</Text>
                 <Text style={[styles.detailValue, { color: colors.text.main }]}>{getSubtypeLabel(clothingItem.type, clothingItem.subtype)}</Text>
               </View>
             )}
             
             <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
-              <Text style={[styles.detailLabel, { color: colors.text.light }]}>Couleur</Text>
+              <Text style={[styles.detailLabel, { color: colors.text.light }]}>{t('clothing.colorLabel')}</Text>
               <View style={styles.colorContainer}>
                 <MultiColorDisplay colorString={clothingItem.color} />
               </View>
             </View>
             
             <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
-              <Text style={[styles.detailLabel, { color: colors.text.light }]}>Motif</Text>
-              <Text style={[styles.detailValue, { color: colors.text.main }]}>{PATTERNS[clothingItem.pattern as keyof typeof PATTERNS] || PATTERNS['plain']}</Text>
+              <Text style={[styles.detailLabel, { color: colors.text.light }]}>{t('clothing.patternLabel')}</Text>
+              <Text style={[styles.detailValue, { color: colors.text.main }]}>{getPatternLabel(clothingItem.pattern)}</Text>
             </View>
             
             {clothingItem.material && (
               <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
-                <Text style={[styles.detailLabel, { color: colors.text.light }]}>Matériau</Text>
-                <Text style={[styles.detailValue, { color: colors.text.main }]}>{MATERIALS[clothingItem.material] || clothingItem.material}</Text>
+                <Text style={[styles.detailLabel, { color: colors.text.light }]}>{t('clothing.materialLabel')}</Text>
+                <Text style={[styles.detailValue, { color: colors.text.main }]}>{getMaterialLabel(clothingItem.material)}</Text>
               </View>
             )}
 
             {clothingItem.fit && (
               <View style={[styles.detailItem, { borderBottomColor: colors.text.lighter }]}>
-                <Text style={[styles.detailLabel, { color: colors.text.light }]}>Coupe</Text>
+                <Text style={[styles.detailLabel, { color: colors.text.light }]}>{t('clothing.fitLabel')}</Text>
                 <Text style={[styles.detailValue, { color: colors.text.main }]}>{getFitLabel(clothingItem.fit)}</Text>
               </View>
             )}
@@ -216,7 +227,7 @@ export default function ClothingDetailScreen() {
               })}
             >
               <Ionicons name="create-outline" size={20} color={colors.white} />
-              <Text style={[styles.editButtonText]}>Modifier</Text>
+              <Text style={[styles.editButtonText]}>{t('clothing.modifyButton')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -227,7 +238,7 @@ export default function ClothingDetailScreen() {
               })}
             >
               <Ionicons name="shirt-outline" size={20} color={colors.white} />
-              <Text style={[styles.outfitButtonText]}>Créer une tenue</Text>
+              <Text style={[styles.outfitButtonText]}>{t('clothing.createOutfitButton')}</Text>
             </TouchableOpacity>
           </View>}
 

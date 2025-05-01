@@ -13,6 +13,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { ColorsTheme, getThemeColors } from '@/constants/Colors';
 import SearchBar from '@/components/SearchBar';
 import { useOutfit } from '@/contexts/OutfitContext';
+import { useTranslation } from 'react-i18next';
 
 type WardrobeSelectParams = {
   multiple?: string;
@@ -48,7 +49,8 @@ export default function WardrobeSelectScreen() {
     colorFilterMode: 'differentItems'
   });
   const [selectedClothes, setSelectedClothes] = useState<string[]>(clothescreateOutfit.map(clothe => clothe.id));
-
+  const { t } = useTranslation();
+  
   const fetchClothes = async () => {
     if (!user) return;
 
@@ -112,24 +114,18 @@ export default function WardrobeSelectScreen() {
       
       if (colorFilterMode === 'sameItem') {
         filtered = filtered.filter(item => {
-          const selectedColorIds = filters.colors.map(colorName => {
-            const colorObj = COLORS.find((c: typeof COLORS[0]) => c.name === colorName);
-            return colorObj ? colorObj.id : null;
-          }).filter(id => id !== null);
+          const selectedColorIds = filters.colors;
           
           return selectedColorIds.every(colorId => 
-            item.color.toLowerCase().includes(colorId?.toLowerCase() || '')
+            item.color.toLowerCase().includes(colorId.toLowerCase() || '')
           );
         });
       } else {
         filtered = filtered.filter(item => {
-          const selectedColorIds = filters.colors.map(colorName => {
-            const colorObj = COLORS.find((c: typeof COLORS[0]) => c.name === colorName);
-            return colorObj ? colorObj.id : null;
-          }).filter(id => id !== null);
+          const selectedColorIds = filters.colors;
           
           return selectedColorIds.some(colorId => 
-            item.color.toLowerCase().includes(colorId?.toLowerCase() || '')
+            item.color.toLowerCase().includes(colorId.toLowerCase() || '')
           );
         });
       }
@@ -258,9 +254,9 @@ export default function WardrobeSelectScreen() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.typeFiltersContainer}
       >
-        <FilterButton title="Tous" value={null} />
+        <FilterButton title={t('common.all')} value={null} />
         {Object.entries(types).map(([key, value]) => (
-          <FilterButton key={key} title={value} value={key} />
+          <FilterButton key={key} title={t(`clothingTypes.${key}`)} value={key} />
         ))}
       </ScrollView>
     );

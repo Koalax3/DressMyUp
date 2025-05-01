@@ -1,12 +1,12 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Tabs, Slot } from 'expo-router';
+import { Tabs, Slot, useRootNavigationState, router } from 'expo-router';
 import { ColorsTheme, getThemeColors } from '../../constants/Colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { useEffect, useState } from 'react';
-import { router } from 'expo-router';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { ActivityIndicator, View } from 'react-native';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useTranslation } from '@/i18n/useTranslation';
 
 /**
  * Vous pouvez explorer la documentation intégrée d'Expo Router:
@@ -14,11 +14,27 @@ import { useTheme } from '@/contexts/ThemeContext';
  */
 
 export default function TabLayout() {
-  const { user, loading } = useAuth();
+  const rootNavigationState = useRootNavigationState();
+  let auth;
+  
+  try {
+    // Essayer d'accéder au contexte d'authentification
+    auth = useAuth();
+  } catch (error) {
+    // En cas d'erreur, retourner un Slot vide
+    return <Slot />;
+  }
+  
+  const { user, loading } = auth;
   const [isNavigating, setIsNavigating] = useState(false);
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
 
   // Rediriger vers la page de connexion si l'utilisateur n'est pas connecté
   useEffect(() => {
+    if (!rootNavigationState?.key) return;
+    
     // Attendre un court délai pour s'assurer que le composant est monté
     const timer = setTimeout(() => {
       if (!loading && !user && !isNavigating) {
@@ -32,10 +48,10 @@ export default function TabLayout() {
     }, 100);
 
     return () => clearTimeout(timer);
-  }, [user, loading, isNavigating]);
+  }, [user, loading, isNavigating, rootNavigationState?.key]);
 
   // Afficher un indicateur de chargement pendant le chargement
-  if (loading) {
+  if (loading || !rootNavigationState?.key) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color={ColorsTheme.primary.main} />
@@ -47,8 +63,6 @@ export default function TabLayout() {
   if (!user) {
     return <Slot />;
   }
-  const { isDarkMode } = useTheme();
-  const colors = getThemeColors(isDarkMode);
 
   return (
     <Tabs
@@ -69,28 +83,28 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Garde-robe',
+          title: t('navigation.wardrobe'),
           tabBarIcon: ({ color }) => <MaterialCommunityIcons name="hanger" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="create"
         options={{
-          title: 'Créer',
+          title: t('navigation.create'),
           tabBarIcon: ({ color }) => <FontAwesome name="plus-circle" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          title: 'Explorer',
+          title: t('navigation.explore'),
           tabBarIcon: ({ color }) => <FontAwesome name="compass" size={24} color={color} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
+          title: t('navigation.profile'),
           tabBarIcon: ({ color }) => <FontAwesome name="user" size={24} color={color} />,
         }}
       />

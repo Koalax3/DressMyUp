@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { occasions, seasons, genders } from '@/constants/Outfits';
-import GenericSelector from './GenericSelector';
+import GenericSelector from './selector/GenericSelector';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import { useFilter } from '@/contexts/FilterContext';
-
+import { useTranslation } from 'react-i18next';
 export type OutfitFilters = {
   seasons: string[];
   occasions: string[];
@@ -35,7 +35,7 @@ const OutfitFilterModal = ({
   const [occasionsFilter, setOccasionsFilter] = useState<string[]>(currentFilters.occasions);
   const [gendersFilter, setGendersFilter] = useState<string[]>(currentFilters.genders || []);
   const [withFavoritesFilter, setwithFavoritesFilter] = useState<boolean>(currentFilters.withFavorites);
-
+  const { t } = useTranslation();
   useEffect(() => {
     if (visible) {
       // Réinitialiser les états locaux avec les filtres actuels
@@ -117,7 +117,7 @@ const OutfitFilterModal = ({
                   { color: colors.text.light },
                   seasonsFilter.includes(season) && [styles.optionTextActive, { color: colors.text.bright }]
                 ]}>
-                  {seasons[season]}
+                  {t(`seasons.${season}`)}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -125,19 +125,19 @@ const OutfitFilterModal = ({
         </View>
         
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Occasions</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('common.styles')}</Text>
           <GenericSelector
             options={occasions}
             selectedOption={occasionsFilter}
             onOptionSelect={(option) => setOccasionsFilter(Array.isArray(option) ? option : [option])}
-            title="Occasions"
+            title={t('common.styles')}
             multiSelect
             searchable
           />
         </View>
         
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Genre</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('common.genders')}</Text>
           <View style={styles.optionsContainer}>
             {Object.keys(genders).map(gender => (
               <TouchableOpacity 
@@ -165,7 +165,7 @@ const OutfitFilterModal = ({
                     { color: colors.text.light },
                     gendersFilter.includes(gender) && [styles.optionTextActive, { color: colors.text.bright }]
                   ]}>
-                    {genders[gender]}
+                    {t(`genders.${gender}`)}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -178,14 +178,14 @@ const OutfitFilterModal = ({
             style={[styles.resetButton, { backgroundColor: colors.secondary.main }]}
             onPress={resetFilters}
           >
-            <Text style={[styles.resetButtonText, { color: colors.white }]}>Réinitialiser</Text>
+            <Text style={[styles.resetButtonText, { color: colors.white }]}>{t('common.reset')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity 
             style={[styles.applyButton, { backgroundColor: colors.primary.main }]}
             onPress={handleApply}
           >
-            <Text style={[styles.applyButtonText, { color: colors.white }]}>Appliquer</Text>
+            <Text style={[styles.applyButtonText, { color: colors.white }]}>{t('common.apply')}</Text>
           </TouchableOpacity>
         </View>
       </View>

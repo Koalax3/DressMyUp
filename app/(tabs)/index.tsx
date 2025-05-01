@@ -8,20 +8,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import FloatingButton from '@/components/FloatingButton';
 import Header from '@/components/Header';
 import Button from '@/components/Button';
-import EmptyWardrobeModal from '@/components/EmptyWardrobeModal';
 import ClothingView from '@/components/ClothingView';
 import OutfitView from '@/components/OutfitView';
-import { useFilter } from '@/contexts/FilterContext';
 
 export default function WardrobeScreen() {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
-  const { isLoading, hasOutfits } = useOutfit();
+  const { isLoading } = useOutfit();
   const [viewMode, setViewMode] = useState<'clothes' | 'outfits'>('clothes');
-  const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = () => {
-    setRefreshing(true);
-  };
 
   const addItem = () => {
     if (viewMode === 'clothes') {
@@ -68,11 +62,6 @@ export default function WardrobeScreen() {
         onPress={addItem} 
         backgroundColor="#F97A5C"
         iconColor="#FFFFFF"
-      />
-
-      <EmptyWardrobeModal 
-        visible={!hasOutfits}
-        onClose={() => {}}
       />
     </SafeAreaView>
   );

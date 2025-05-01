@@ -7,11 +7,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import Header from '@/components/Header';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function ProfileScreen() {
   const { user } = useAuth();
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
   
   // Si l'utilisateur n'est pas connecté, rediriger vers la page de connexion
   if (!user) {
@@ -25,7 +27,7 @@ export default function ProfileScreen() {
   
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <Header title="Profil" >
+      <Header title={t('navigation.profile')} >
         <TouchableOpacity onPress={navigateToSettings}>
           <Ionicons name="settings-outline" size={24} color={colors.text.main} />
         </TouchableOpacity>

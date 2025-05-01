@@ -8,20 +8,20 @@ import { fits, subtypesByType, types } from '@/constants/Clothes';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
-import GenericSelector from './GenericSelector';
-import ColorSelector from './ColorSelector';
+import GenericSelector from './selector/GenericSelector';
+import ColorSelector from './selector/ColorSelector';
 import { PATTERNS } from '@/constants/Clothes';
 import { MATERIALS } from '@/constants/Materials';
 import { BRANDS } from '@/constants/Clothes';
 import { COLORS } from '@/constants/Clothes';
 import { supabase } from '@/constants/Supabase';
 import { decode } from 'base64-arraybuffer';
-import BrandSelector from './BrandSelector';
+import BrandSelector from './selector/BrandSelector';
 import { useClothing } from '@/contexts/ClothingContext';
 import Toast from 'react-native-toast-message';
 import { ClothingService } from '@/services';
 import debounce from 'lodash/debounce';
-
+import { useTranslation } from 'react-i18next';
 export type ClothingFormData = {
   name: string;
   reference?: string;
@@ -71,7 +71,7 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
   const [isCheckingReference, setIsCheckingReference] = useState(false);
   const [foundItem, setFoundItem] = useState<ClothingItem | null>(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
-
+  const { t } = useTranslation();
   // Fonction de vérification de référence avec debounce
   const checkReference = useCallback(
     debounce(async (ref: string) => {
@@ -140,7 +140,7 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
   // Convertir les constantes en options pour GenericSelector
   const colorOptions = COLORS.map(color => ({
     key: color.id,
-    label: color.name,
+    label: color.id,
   }));
 
   const brandOptions = BRANDS.map(brand => ({
@@ -163,8 +163,8 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
     
     if (!name || !color || !image) {
       Toast.show({
-        text1: 'Erreur',
-        text2: 'Veuillez remplir tous les champs obligatoires (nom, couleur) et ajouter une image',
+        text1: t('errors.error'),
+        text2: t('errors.requiredField'),
         type: 'error',
       });
       return;
@@ -187,18 +187,18 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
       await onSubmit(formData, image !== originalImage);
     } catch (error) {
       console.error('Erreur dans le formulaire:', error);
-      Alert.alert('Erreur', 'Une erreur s\'est produite. Veuillez réessayer.');
+      Alert.alert(t('errors.error'), t('errors.tryAgain'));
     }
   };
 
   const showReferenceInfoModal = () => {
-    Alert.alert('Référence', 'La référence est un code unique qui identifie le vêtement. Si vous le communiquez, nous pourrons vous proposer une completion automatique dans le cas où nous l\'avons déjà dans notre base de données.');
+    Alert.alert(t('clothing.referenceLabel'), t('clothing.referenceInfo'));
   };
 
   return (
     <ScrollView style={styles.form} showsVerticalScrollIndicator={false}>
       <Text style={[styles.label, { color: colors.text.main }]}>
-        Référence 
+        {t('clothing.referenceLabel')} 
         {showReferenceInfo && (
           <Ionicons 
             onPress={showReferenceInfoModal} 
@@ -219,7 +219,7 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
               flex: 1
             }
           ]}
-          placeholder="Référence (optionnel)"
+          placeholder={t('clothing.referencePlaceholder')}
           value={reference}
           onChangeText={setReference}
           placeholderTextColor={colors.text.light}
@@ -229,7 +229,7 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
         )}
       </View>
 
-      <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Image*</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('clothing.image')}*</Text>
       <ImagePicker 
         imageUri={image}
         onImageSelected={(uri) => {
@@ -243,7 +243,7 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
         uploading={uploadingImage}
       />
 
-      <Text style={[styles.label, { color: colors.text.main }]}>Nom*</Text>
+      <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.name')}*</Text>
       <TextInput
         style={[
           styles.input,
@@ -253,69 +253,69 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
             borderColor: name ? colors.primary.main : undefined
           }
         ]}
-        placeholder="Ex: T-shirt blanc"
+        placeholder={t('clothing.namePlaceholder')}
         value={name}
         onChangeText={setName}
         placeholderTextColor={colors.text.light}
       />
 
-      <Text style={[styles.label, { color: colors.text.main }]}>Type*</Text>
+      <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.typeLabel')}*</Text>
       <GenericSelector
         options={types}
         selectedOption={type}
         onOptionSelect={(selected) => setType(typeof selected === 'string' ? selected as ClothingType : 'top')}
-        title="Sélectionner un type"
-        placeholder="Sélectionner un type"
+        title={t('clothing.selectType')}
+        placeholder={t('clothing.selectType')}
       />
 
-      <Text style={[styles.label, { color: colors.text.main }]}>Sous-type *</Text>
+      <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.subtypeLabel')} *</Text>
       <GenericSelector
         options={availableSubtypes}
         selectedOption={subtype || ''}
         onOptionSelect={(selected) => setSubtype(typeof selected === 'string' ? selected as ClothingSubType : null)}
-        title="Sélectionner un sous-type"
-        placeholder="Sélectionner un sous-type"
+        title={t('clothing.selectSubtype')}
+        placeholder={t('clothing.selectSubtype')}
       />
 
-      <Text style={[styles.label, { color: colors.text.main }]}>Couleur*</Text>
+      <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.colorLabel')}*</Text>
       <ColorSelector
         selectedColor={color}
         onColorSelect={setColor}
       />
 
-      <Text style={[styles.label, { color: colors.text.main }]}>Marque</Text>
+      <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.brand')}</Text>
       <BrandSelector
         selectedBrand={brand || null}
         onBrandSelect={setBrand}
       />
 
-      <Text style={[styles.label, { color: colors.text.main }]}>Motif</Text>
+      <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.patternLabel')}</Text>
       <GenericSelector
         options={patternOptions}
         selectedOption={pattern}
         onOptionSelect={(selected) => setPattern(typeof selected === 'string' ? selected : null)}
-        title="Sélectionner un motif"
-        placeholder="Sélectionner un motif"
+        title={t('clothing.selectPattern')}
+        placeholder={t('clothing.selectPattern')}
       />
 
-      <Text style={[styles.label, { color: colors.text.main }]}>Matériau</Text>
+      <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.materialLabel')}</Text>
       <GenericSelector
         options={materialOptions}
         selectedOption={material || ''  }
         onOptionSelect={(selected) => setMaterial(typeof selected === 'string' ? selected : null)}
-        title="Sélectionner un matériau"
-        placeholder="Sélectionner un matériau"
+        title={t('clothing.selectMaterial')}
+        placeholder={t('clothing.selectMaterial')}
         searchable={true}
-        searchPlaceholder="Rechercher un matériau..."
+        searchPlaceholder={t('clothing.searchMaterial')}
       />
 
-      <Text style={[styles.label, { color: colors.text.main }]}>Coupe</Text>
+      <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.fitLabel')}</Text>
       <GenericSelector
         options={fits}
         selectedOption={fit || ''}
         onOptionSelect={(selected) => setFit(typeof selected === 'string' ? selected : null)}
-        title="Sélectionner une coupe"
-        placeholder="Sélectionner une coupe"
+        title={t('clothing.selectFit')}
+        placeholder={t('clothing.selectFit')}
       />
 
       <TouchableOpacity
@@ -331,7 +331,7 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
           <ActivityIndicator color={colors.white} />
         ) : (
           <Text style={[styles.saveButtonText, { color: colors.white }]}>
-            {mode === 'add' ? 'Ajouter' : 'Enregistrer'}
+            {mode === 'add' ? t('clothing.add') : t('common.save')}
           </Text>
         )}
       </TouchableOpacity>
@@ -344,13 +344,13 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
       >
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, { backgroundColor: colors.background.main }]}>
-            <Text style={[styles.modalTitle, { color: colors.text.main }]}>Produit trouvé</Text>
+            <Text style={[styles.modalTitle, { color: colors.text.main }]}>{t('clothing.productFound')}</Text>
             {foundItem && (
               <>
                 <Image source={{ uri: foundItem.image_url }} style={styles.modalImage} />
                 <Text style={[styles.modalText, { color: colors.text.main }]}>{foundItem.name}</Text>
                 <Text style={[styles.modalText, { color: colors.text.light }]}>
-                  {types[foundItem.type]} - {foundItem.subtype && subtypesByType[foundItem.type][foundItem.subtype]}
+                  {t(`clothingTypes.${foundItem.type}`)} - {foundItem.subtype && t(`clothingSubtypes.${foundItem.type}.${foundItem.subtype}`)}
                 </Text>
                 {foundItem.brand && (
                   <Text style={[styles.modalText, { color: colors.text.light }]}>{foundItem.brand}</Text>
@@ -360,13 +360,13 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
                     style={[styles.modalButton, { backgroundColor: colors.gray }]}
                     onPress={() => setShowSuggestionModal(false)}
                   >
-                    <Text style={[styles.modalButtonText, { color: colors.text.main }]}>Annuler</Text>
+                    <Text style={[styles.modalButtonText, { color: colors.text.main }]}>{t('common.cancel')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.modalButton, { backgroundColor: colors.primary.main }]}
                     onPress={handleAutoComplete}
                   >
-                    <Text style={[styles.modalButtonText, { color: colors.white }]}>Compléter</Text>
+                    <Text style={[styles.modalButtonText, { color: colors.white }]}>{t('clothing.complete')}</Text>
                   </TouchableOpacity>
                 </View>
               </>
@@ -493,6 +493,7 @@ const ClothingFormWrapper: React.FC<ClothingFormWrapperProps> = ({
   const [uploadingImage, setUploadingImage] = React.useState(false);
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
 
   const handleSubmit = async (formData: ClothingFormData, imageChanged: boolean) => {
     if (!user) return;
@@ -549,7 +550,7 @@ const ClothingFormWrapper: React.FC<ClothingFormWrapperProps> = ({
         if(newClothing) {
           addClothing(newClothing);
           Toast.show({
-            text1: 'Vêtement ajouté avec succès!',
+            text1: t('success.clothingAdded'),
             type: 'success',
           });
           router.back();
@@ -585,14 +586,14 @@ const ClothingFormWrapper: React.FC<ClothingFormWrapperProps> = ({
         
         setRefreshing(true);
         Toast.show({
-          text1: 'Vêtement mis à jour avec succès!',
+          text1: t('success.clothingUpdated'),
           type: 'success',
         });
         router.back();
       }
     } catch (error) {
       console.error('Erreur lors de l\'opération sur le vêtement:', error);
-      Alert.alert('Erreur', 'Impossible de sauvegarder le vêtement. Veuillez réessayer.');
+      Alert.alert(t('errors.error'), t('errors.clothingSaveError'));
     } finally {
       setIsLoading(false);
       setRefreshing(true);

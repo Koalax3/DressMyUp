@@ -15,7 +15,8 @@ import { getPreferences } from '@/services/preferencesService';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import Header from '@/components/Header';
-import GenericSelector from '@/components/GenericSelector';
+import GenericSelector from '@/components/selector/GenericSelector';
+import { useTranslation } from '@/i18n/useTranslation';
 
 // Type simplifié pour l'affichage des tenues
 type OutfitWithUser = Outfit & { user: User } & { clothes: ClothingItem[] };
@@ -24,34 +25,9 @@ type OutfitWithUser = Outfit & { user: User } & { clothes: ClothingItem[] };
 type FilterCategory = 'season' | 'occasion' | 'gender';
 type FilterValue = string | null;
 
-// Options de filtres
-const filterOptions = {
-  season: Object.keys(seasons).map(season => ({
-    key: season,
-    value: season,
-    label: seasons[season]
-  })),
-  occasion: [
-    { key: 'all', value: 'all', label: 'Tous les styles' },
-    { key: 'fav', value: 'fav', label: 'Mes styles' },
-    ...STYLES.map(style => ({
-      key: style.id,
-      value: style.id,
-      label: style.name
-    }))
-  ],
-  gender: [
-    { key: 'all', value: 'all', label: 'Tous les genres' },
-    ...Object.keys(genders).map(gender => ({
-      key: gender,
-      value: gender,
-      label: genders[gender]
-    }))
-  ]
-};
-
 export default function ExploreScreen() {
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [outfits, setOutfits] = useState<OutfitWithUser[]>([]);
   const [filteredOutfits, setFilteredOutfits] = useState<OutfitWithUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,6 +49,32 @@ export default function ExploreScreen() {
   
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+
+  // Construction des options de filtres avec i18n
+  const filterOptions = useMemo(() => ({
+    season: Object.keys(seasons).map(season => ({
+      key: season,
+      value: season,
+      label: seasons[season]
+    })),
+    occasion: [
+      { key: 'all', value: 'all', label: t('explore.allStyles') },
+      { key: 'fav', value: 'fav', label: t('explore.myStyles') },
+      ...STYLES.map(style => ({
+        key: style.id,
+        value: style.id,
+        label: t(`styles.${style.id}`)
+      }))
+    ],
+    gender: [
+      { key: 'all', value: 'all', label: t('explore.allGenders') },
+      ...Object.keys(genders).map(gender => ({
+        key: gender,
+        value: gender,
+        label: genders[gender]
+      }))
+    ]
+  }), [t]);
 
   // Récupérer les IDs des favoris une seule fois et les mettre en cache
   const likedOutfitIds = useMemo(async () => {
@@ -147,12 +149,12 @@ export default function ExploreScreen() {
       const response = await fetchOutfitsForExplore(user.id, pageNumber, ITEMS_PER_PAGE, filterOptions);
       
       if (!response) {
-        console.error('Erreur: Pas de réponse du serveur');
+        console.error(t('errors.noResponse'));
         return;
       }
       
       if (response.error) {
-        console.error('Erreur lors de la récupération des tenues:', response.error);
+        console.error(t('errors.fetchOutfits'), response.error);
       } else {
         const outfitsData = response.data as OutfitWithUser[] || [];
         
@@ -172,13 +174,13 @@ export default function ExploreScreen() {
         setHasMore(outfitsData.length === ITEMS_PER_PAGE);
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error(t('errors.generic'), error);
     } finally {
       setLoading(false);
       setLoadingMore(false);
       setRefreshing(false);
     }
-  }, [user, buildFilterOptions, outfits, loadingMore, hasMore]);
+  }, [user, buildFilterOptions, outfits, loadingMore, hasMore, t]);
 
   // Effet pour gérer les changements de filtres
   useEffect(() => {
@@ -201,12 +203,12 @@ export default function ExploreScreen() {
           const response = await fetchOutfitsForExplore(user.id, 1, ITEMS_PER_PAGE, filterOptions);
           
           if (!response) {
-            console.error('Erreur: Pas de réponse du serveur');
+            console.error(t('errors.noResponse'));
             return;
           }
           
           if (response.error) {
-            console.error('Erreur lors de la récupération des tenues:', response.error);
+            console.error(t('errors.fetchOutfits'), response.error);
           } else {
             const outfitsData = response.data as OutfitWithUser[] || [];
             setOutfits(outfitsData);
@@ -218,7 +220,7 @@ export default function ExploreScreen() {
 
         reloadData();
       }
-    }, [user, buildFilterOptions])
+    }, [user, buildFilterOptions, t])
   );
 
   // Mettre à jour un filtre
@@ -295,7 +297,7 @@ export default function ExploreScreen() {
                 filters[category] === option.value && { color: colors.white }
               ]}
             >
-              {option.label}
+              {t(`${category}.${option.value}`)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -305,10 +307,10 @@ export default function ExploreScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <Header title="Explorer">
+      <Header title={t('navigation.explore')}>
         {hasActiveFilters() && (
           <TouchableOpacity onPress={resetFilters} style={{...styles.resetButton, backgroundColor:colors.gray}}>
-            <Text style={[styles.resetButtonText, { color: colors.primary.main }]}>Réinitialiser</Text>
+            <Text style={[styles.resetButtonText, { color: colors.primary.main }]}>{t('common.reset')}</Text>
           </TouchableOpacity>
         )}
       </Header>
@@ -344,7 +346,7 @@ export default function ExploreScreen() {
                 }
               ]}
             >
-              Saison
+              {t('clothing.season')}
             </Text>
           </TouchableOpacity>
 
@@ -352,9 +354,9 @@ export default function ExploreScreen() {
             options={filterOptions['occasion']}
             selectedOption={filters['occasion']}
             onOptionSelect={(option) => updateFilter('occasion', option as string)}
-            title="Styles"
+            title={t('explore.styles')}
             searchable={true}
-            searchPlaceholder="Rechercher un style..."
+            searchPlaceholder={t('explore.searchStyle')}
           >
             {(setModalVisible) => (
               <TouchableOpacity
@@ -389,7 +391,7 @@ export default function ExploreScreen() {
                     }
                   ]}
                 >
-                  Style
+                  {t('explore.style')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -424,7 +426,7 @@ export default function ExploreScreen() {
                 }
               ]}
             >
-              Genre
+              {t('explore.gender')}
             </Text>
           </TouchableOpacity>
 
@@ -457,7 +459,7 @@ export default function ExploreScreen() {
                 }
               ]}
             >
-              Favoris
+              {t('explore.favorites')}
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -503,7 +505,7 @@ export default function ExploreScreen() {
             ) : (
               filters.occasion === 'fav' ? <View style={styles.loadingMoreContainer}>
                 <TouchableOpacity onPress={() => setFilters({...filters, occasion: 'all'})} style={[styles.createButton, { backgroundColor: colors.primary.main }]}>
-                  <Text style={styles.createButtonText}>Afficher plus de tenues</Text>
+                  <Text style={styles.createButtonText}>{t('explore.showMoreOutfits')}</Text>
                 </TouchableOpacity>
               </View> : null
             )
@@ -512,7 +514,7 @@ export default function ExploreScreen() {
             <View style={styles.emptyContainer}>
               <Ionicons name="search" size={64} color={colors.text.light} />
               <Text style={[styles.emptyText, { color: colors.text.main }]}>
-                Aucune tenue trouvée
+                {t('explore.noOutfitsFound')}
               </Text>
               <TouchableOpacity
                 style={[styles.createButton, { backgroundColor: colors.primary.main }]}
@@ -521,7 +523,7 @@ export default function ExploreScreen() {
                   loadOutfits(1, false);
                 }}
               >
-                <Text style={styles.createButtonText}>Réinitialiser les filtres</Text>
+                <Text style={styles.createButtonText}>{t('common.reset')}</Text>
               </TouchableOpacity>
             </View>
           }

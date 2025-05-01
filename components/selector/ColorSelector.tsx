@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS } from '../constants/Clothes';
-import ColorDot from './ColorDot';
-import MultiColorDisplay from './MultiColorDisplay';
+import { COLORS } from '@/constants/Clothes';
+import ColorDot from '@/components/ColorDot';
+import MultiColorDisplay from '@/components/MultiColorDisplay';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useTranslation } from '@/i18n/useTranslation';
 
 interface ColorSelectorProps {
   selectedColor: string | null;
@@ -17,6 +18,7 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSel
   const [selectedColors, setSelectedColors] = useState<string[]>([]);
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
   
   // Initialiser les couleurs sélectionnées au chargement du composant
   useEffect(() => {
@@ -70,18 +72,18 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSel
   // Préparation du texte d'affichage
   const getDisplayText = () => {
     if (!selectedColor || selectedColorObjects.length === 0) {
-      return "Sélectionner une couleur";
+      return t('clothing.selectColor');
     }
     
     if (selectedColorObjects.length === 1) {
-      return selectedColorObjects[0]?.name;
+      return selectedColorObjects[0]?.id;
     }
     
     if (selectedColorObjects.length === 2) {
-      return `${selectedColorObjects[0]?.name}, ${selectedColorObjects[1]?.name}`;
+      return `${selectedColorObjects[0]?.id}, ${selectedColorObjects[1]?.id}`;
     }
     
-    return `${selectedColorObjects[0]?.name}, ${selectedColorObjects[1]?.name} + ${selectedColorObjects.length - 2}`;
+    return `${selectedColorObjects[0]?.id}, ${selectedColorObjects[1]?.id} + ${selectedColorObjects.length - 2}`;
   };
 
   const renderColorItem = ({ item }: { item: typeof COLORS[0] }) => (
@@ -92,7 +94,7 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSel
       <View style={styles.colorItemContent}>
         <ColorDot size={45} colorValue={item.value} />
         <Text style={[styles.colorName, { color: colors.text.main }]}>
-          {item.name}
+          {t(`clothingColors.${item.id}`)}
         </Text>
       </View>
       {selectedColors.includes(item.id) && (
@@ -122,7 +124,7 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSel
             <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={colors.text.main} />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: colors.text.main }]}>Sélectionner des couleurs</Text>
+            <Text style={[styles.modalTitle, { color: colors.text.main }]}>{t('clothing.selectColors')}</Text>
             <View style={{ width: 24 }} />
           </View>
           
@@ -147,7 +149,9 @@ const ColorSelector: React.FC<ColorSelectorProps> = ({ selectedColor, onColorSel
               disabled={selectedColors.length === 0}
             >
               <Text style={[styles.confirmButtonText, { color: colors.text.bright }]}>
-                Confirmer ({selectedColors.length} sélectionnée{selectedColors.length > 1 ? 's' : ''})
+                {t('common.confirm')} ({selectedColors.length} {selectedColors.length > 1 
+                  ? t('clothing.colorsSelected') 
+                  : t('clothing.colorSelected')})
               </Text>
             </TouchableOpacity>
           </View>

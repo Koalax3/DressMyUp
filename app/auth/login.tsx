@@ -5,16 +5,18 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ColorsTheme } from '@/constants/Colors';
 import TextInput from '@/components/TextInput';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
+  const { t } = useTranslation();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert(t('errors.generic'), t('errors.requiredField'));
       return;
     }
 
@@ -23,7 +25,7 @@ export default function LoginScreen() {
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur de connexion', error.message);
+      Alert.alert(t('errors.authFailed'), error.message);
     } else {
       router.replace('/(tabs)' as any);
     }
@@ -40,12 +42,12 @@ export default function LoginScreen() {
           resizeMode="contain"
         />
         <Text style={styles.title}>DressMatch</Text>
-        <Text style={styles.subtitle}>Votre garde-robe virtuelle</Text>
+        <Text style={styles.subtitle}>{t('auth.virtualWardrobe')}</Text>
       </View>
 
       <View style={styles.formContainer}>
         <TextInput
-          placeholder="Email"
+          placeholder={t('auth.email')}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -54,7 +56,7 @@ export default function LoginScreen() {
         />
         
         <TextInput
-          placeholder="Mot de passe"
+          placeholder={t('auth.password')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -69,14 +71,14 @@ export default function LoginScreen() {
           {loading ? (
             <ActivityIndicator color={ColorsTheme.background.main} />
           ) : (
-            <Text style={styles.buttonText}>Se connecter</Text>
+            <Text style={styles.buttonText}>{t('auth.login')}</Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Vous n'avez pas de compte ?</Text>
+          <Text style={styles.footerText}>{t('auth.noAccount')}</Text>
           <TouchableOpacity onPress={() => router.push('/auth/register')}>
-            <Text style={styles.link}>S'inscrire</Text>
+            <Text style={styles.link}>{t('auth.register')}</Text>
           </TouchableOpacity>
         </View>
       </View>

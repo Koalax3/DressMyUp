@@ -21,6 +21,7 @@ import Header from '@/components/Header';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import { useClothing } from '@/contexts/ClothingContext';
+import { useTranslation } from '@/i18n/useTranslation';
 
 // Définir le type localement pour correspondre exactement à ce que nous utilisons
 interface OutfitWithDetails extends Outfit {
@@ -35,6 +36,7 @@ interface OutfitWithDetails extends Outfit {
 export default function OutfitDetailScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
+  const { t } = useTranslation();
   const [outfit, setOutfit] = useState<OutfitWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [liked, setLiked] = useState(false);
@@ -60,7 +62,7 @@ export default function OutfitDetailScreen() {
       const count = await counterLikes(id as string);
       setLikesCount(count || 0);
     } catch (error) {
-      console.error('Erreur lors du comptage des likes:', error);
+      console.error(t('errors.likeCountError'), error);
     }
   };
 
@@ -78,8 +80,8 @@ export default function OutfitDetailScreen() {
         updated_at: outfitDetails.created_at
       } as OutfitWithDetails);
     } catch (error) {
-      console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Impossible de charger les détails de la tenue');
+      console.error(t('errors.generic'), error);
+      Alert.alert(t('errors.generic'), t('outfit.loadDetailError'));
     } finally {
       setLoading(false);
     }
@@ -92,7 +94,7 @@ export default function OutfitDetailScreen() {
       const isLiked = await OutfitService.checkIfLiked(user.id, id as string);
       setLiked(isLiked);
     } catch (error) {
-      console.error('Erreur lors de la vérification du like:', error);
+      console.error(t('errors.likeCheckError'), error);
     }
   };
 
@@ -105,8 +107,8 @@ export default function OutfitDetailScreen() {
       setLiked(isNowLiked);
       fetchLikesCount();
     } catch (error) {
-      console.error('Erreur lors du like/unlike:', error);
-      Alert.alert('Erreur', 'Une erreur est survenue');
+      console.error(t('errors.likeToggleError'), error);
+      Alert.alert(t('errors.generic'), t('errors.tryAgain'));
     }
   };
 
@@ -122,8 +124,8 @@ export default function OutfitDetailScreen() {
         updated_at: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Erreur lors de la mise à jour de la visibilité:', error);
-      Alert.alert('Erreur', 'Impossible de modifier la visibilité');
+      console.error(t('errors.visibilityUpdateError'), error);
+      Alert.alert(t('errors.generic'), t('outfit.visibilityUpdateError'));
     } finally {
       setIsUpdating(false);
     }
@@ -141,8 +143,8 @@ export default function OutfitDetailScreen() {
         updated_at: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du genre:', error);
-      Alert.alert('Erreur', 'Impossible de modifier le genre');
+      console.error(t('errors.genderUpdateError'), error);
+      Alert.alert(t('errors.generic'), t('outfit.genderUpdateError'));
     } finally {
       setIsUpdating(false);
     }
@@ -152,25 +154,25 @@ export default function OutfitDetailScreen() {
     if (!user || !outfit) return;
 
     Alert.alert(
-      'Supprimer la tenue',
-      'Êtes-vous sûr de vouloir supprimer cette tenue? Cette action est irréversible.',
+      t('outfit.deleteOutfit'),
+      t('outfit.deleteConfirmation'),
       [
         {
-          text: 'Annuler',
+          text: t('common.cancel'),
           style: 'cancel',
         },
         {
-          text: 'Supprimer',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               setDeleting(true);
               await OutfitService.deleteOutfit(id as string, user.id);
-              Alert.alert('Succès', 'La tenue a été supprimée avec succès');
+              Alert.alert(t('common.success'), t('outfit.deleteSuccess'));
               router.back();
             } catch (error) {
-              console.error('Erreur lors de la suppression de la tenue:', error);
-              Alert.alert('Erreur', 'Impossible de supprimer la tenue');
+              console.error(t('errors.deleteOutfitError'), error);
+              Alert.alert(t('errors.generic'), t('outfit.deleteError'));
             } finally {
               setDeleting(false);
             }
@@ -184,7 +186,7 @@ export default function OutfitDetailScreen() {
     if (!outfit) return;
     const shareData = {
       title: outfit.name,
-      message: `Voir cette tenue: ${outfit.name}`,
+      message: t('outfit.shareMessage', { name: outfit.name }),
       url: outfit.image_url
     };
     Share.share(shareData);
@@ -242,9 +244,9 @@ export default function OutfitDetailScreen() {
   if (!outfit) {
     return (
       <SafeAreaView style={[styles.errorContainer, { backgroundColor: colors.background.main }]}>
-        <Text style={[styles.errorText, { color: colors.text.main }]}>Tenue introuvable</Text>
+        <Text style={[styles.errorText, { color: colors.text.main }]}>{t('outfit.notFound')}</Text>
         <TouchableOpacity style={[styles.button, { backgroundColor: colors.primary.main }]} onPress={() => router.back()}>
-          <Text style={[styles.buttonText, { color: colors.text.bright }]}>Retour</Text>
+          <Text style={[styles.buttonText, { color: colors.text.bright }]}>{t('common.back')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -312,7 +314,7 @@ export default function OutfitDetailScreen() {
               <View style={[styles.metadataItem, { backgroundColor: colors.gray }]}>
                 <Ionicons name="sunny-outline" size={18} color={colors.primary.main} style={styles.metadataIcon} />
                 <Text style={[styles.metadataText, { color: colors.text.main }]}>
-                  {seasons[outfit.season]}
+                  {t(`seasons.${outfit.season}`)}
                 </Text>
               </View>
             )}
@@ -321,7 +323,7 @@ export default function OutfitDetailScreen() {
               <View style={[styles.metadataItem, { backgroundColor: colors.gray }]}>
                 <Ionicons name="calendar-outline" size={18} color={colors.primary.main} style={styles.metadataIcon} />
                 <Text style={[styles.metadataText, { color: colors.text.main }]}>
-                  {occasions[outfit.occasion] || outfit.occasion}
+                  {t(`styles.${outfit.occasion}`)}
                 </Text>
               </View>
             )}
@@ -339,7 +341,7 @@ export default function OutfitDetailScreen() {
                   style={styles.metadataIcon} 
                 />
                 <Text style={[styles.metadataText, { color: colors.text.main }]}>
-                  {genders[outfit.gender] || outfit.gender}
+                  {t(`genders.${outfit.gender}`)}
                 </Text>
               </View>
             )}
@@ -355,7 +357,7 @@ export default function OutfitDetailScreen() {
               {isUpdating ? (
                 <View style={styles.loadingIndicator}>
                   <ActivityIndicator size="small" color={colors.primary.main} />
-                  <Text style={[styles.loadingText, { color: colors.text.main }]}>Mise à jour...</Text>
+                  <Text style={[styles.loadingText, { color: colors.text.main }]}>{t('common.updating')}</Text>
                 </View>
               ) : (
                 <>
@@ -372,7 +374,7 @@ export default function OutfitDetailScreen() {
           )}
 
           {outfit.clothes.length > 0 && <View style={styles.clothesContainer}>
-            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Vêtements</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('outfit.clothes')}</Text>
             {clothes.length > 0 && user && user.id !== outfit.user_id && (
               <View style={[styles.matchingSection, { backgroundColor: colors.gray }]}>
                 <MatchingProgressBar percentage={matchingPercentage} />

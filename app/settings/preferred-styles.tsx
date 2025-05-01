@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ScrollView, Image, Dimensions, Alert, ActivityIndicator } from 'react-native';
+import { 
+  StyleSheet, 
+  View, 
+  Text, 
+  TouchableOpacity, 
+  Image, 
+  Dimensions, 
+  Alert, 
+  ActivityIndicator, 
+  FlatList,
+  ListRenderItemInfo
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -12,15 +23,23 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import Toast from 'react-native-toast-message';
 import Header from '@/components/Header';
+import { useTranslation } from '@/i18n/useTranslation';
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 30 - 10) / 2; // 30 pour les paddings, 10 pour l'espace entre les colonnes
+const cardWidth = (width - 45) / 2; // 30 pour les paddings, 15 pour l'espacement entre les colonnes
+const COLUMN_COUNT = 2;
+
+// Type pour les styles dans la liste
+type StyleItem = {
+  id: string;
+  image: any;
+};
 
 export default function PreferredStylesScreen() {
   const { user } = useAuth();
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  
+  const { t } = useTranslation();
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
 
@@ -55,62 +74,75 @@ export default function PreferredStylesScreen() {
       setIsLoading(true);
       await PreferencesService.updatePreferences(user.id, selectedStyles);
       Toast.show({
-        text1: 'Styles préférés enregistrés',
+        text1: t('success.saved'),
         type: 'success',
         visibilityTime: 3000,
       });
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des préférences:', error);
-      Alert.alert('Erreur', 'Une erreur s\'est produite lors de la sauvegarde de vos préférences');
+      Alert.alert(t('errors.generic'), t('errors.tryAgain'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const keyExtractor = (item: StyleItem) => item.id;
+
+  const renderItem = ({ item }: ListRenderItemInfo<StyleItem>) => {
+    return (
+      <TouchableOpacity
+        style={[
+          styles.card,
+          { backgroundColor: colors.background.deep },
+          selectedStyles.includes(item.id) && styles.selectedCard
+        ]}
+        onPress={() => toggleStyle(item.id)}
+      >
+        <View style={{position: 'relative'}}>
+          <Image source={item.image} style={styles.cardImage} />
+          <LinearGradient
+            colors={['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.8)']}
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              height: '100%',
+              width: '100%'
+            }}
+            start={{x: 0.5, y: 0.5}}
+            end={{x: 0.5, y: 1}}
+          />
+          <View style={styles.infoContainer}>
+            <Text style={styles.cardTitle}>{t(`styles.${item.id}`)}</Text>
+          </View>
+          {selectedStyles.includes(item.id) && (
+            <View style={styles.checkmark}>
+              <Ionicons name="checkmark-circle" size={24} color={ColorsTheme.primary.main} />
+            </View>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <Header title="Styles préférés" back/>
+      <Header title={t('settings.preferredStyles')} back/>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.grid}>
-          {STYLES.map((style) => (
-            <TouchableOpacity
-              key={style.id}
-              style={[
-                styles.card,
-                { backgroundColor: colors.background.deep },
-                selectedStyles.includes(style.id) && styles.selectedCard
-              ]}
-              onPress={() => toggleStyle(style.id)}
-            >
-              <View style={{position: 'relative'}}>
-                <Image source={style.image} style={styles.cardImage} />
-                <LinearGradient
-                  colors={['rgba(0, 0, 0, 0)', 'rgba(0, 0, 0, 0.8)']}
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    height: '100%',
-                    width: '100%'
-                  }}
-                  start={{x: 0.5, y: 0.5}}
-                  end={{x: 0.5, y: 1}}
-                />
-                <View style={styles.infoContainer}>
-                  <Text style={styles.cardTitle}>{style.name}</Text>
-                </View>
-                {selectedStyles.includes(style.id) && (
-                  <View style={styles.checkmark}>
-                    <Ionicons name="checkmark-circle" size={24} color={ColorsTheme.primary.main} />
-                  </View>
-                )}
-              </View>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </ScrollView>
+      <FlatList
+        data={STYLES}
+        initialNumToRender={8}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        numColumns={COLUMN_COUNT}
+        key={"two-column-list"}
+        style={styles.content}
+        contentContainerStyle={styles.contentContainer}
+        columnWrapperStyle={styles.columnWrapper}
+        maxToRenderPerBatch={10}
+        windowSize={10}
+      />
 
       <TouchableOpacity 
         style={[
@@ -125,7 +157,7 @@ export default function PreferredStylesScreen() {
         <ActivityIndicator size="large" color={colors.white} />
         : 
         <Text style={styles.saveButtonText}>
-          Enregistrer
+          {t('common.save')}
         </Text>
         }
       </TouchableOpacity>
@@ -155,11 +187,13 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 15,
-    gap: 10,
+  contentContainer: {
+    paddingHorizontal: 15,
+    paddingVertical: 15,
+  },
+  columnWrapper: {
+    justifyContent: 'space-between',
+    marginBottom: 15,
   },
   card: {
     width: cardWidth,

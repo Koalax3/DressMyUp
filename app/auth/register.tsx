@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ColorsTheme } from '@/constants/Colors';
 import TextInput from '@/components/TextInput';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -13,20 +14,21 @@ export default function RegisterScreen() {
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
+  const { t } = useTranslation();
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword || !username) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      Alert.alert(t('errors.generic'), t('errors.requiredField'));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+      Alert.alert(t('errors.generic'), t('auth.passwordMismatch'));
       return;
     }
 
     if (password.length < 6) {
-      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
+      Alert.alert(t('errors.generic'), t('auth.passwordTooShort'));
       return;
     }
 
@@ -39,23 +41,23 @@ export default function RegisterScreen() {
         
         // Gérer les différents types d'erreurs
         if (error.message && error.message.includes('email')) {
-          Alert.alert('Erreur d\'inscription', 'Adresse email invalide ou déjà utilisée');
+          Alert.alert(t('auth.registerError'), t('auth.emailInvalid'));
         } else if (error.message && error.message.includes('password')) {
-          Alert.alert('Erreur d\'inscription', 'Le mot de passe est trop faible');
+          Alert.alert(t('auth.registerError'), t('auth.passwordWeak'));
         } else {
-          Alert.alert('Erreur d\'inscription', error.message || 'Une erreur s\'est produite lors de l\'inscription');
+          Alert.alert(t('auth.registerError'), error.message || t('errors.generic'));
         }
       } else {
         // Rediriger directement vers les onglets au lieu de la page de connexion
         Alert.alert(
-          'Inscription réussie', 
-          'Votre compte a été créé avec succès. Vous allez recevoir un email de confirmation.',
-          [{ text: 'OK', onPress: () => router.replace('/auth/login') }]
+          t('auth.registerSuccess'), 
+          t('auth.confirmationEmail'),
+          [{ text: t('common.ok'), onPress: () => router.replace('/auth/login') }]
         );
       }
     } catch (error) {
       console.error('Erreur inattendue:', error);
-      Alert.alert('Erreur', 'Une erreur inattendue s\'est produite');
+      Alert.alert(t('errors.generic'), t('errors.unexpectedError'));
     } finally {
       setLoading(false);
     }
@@ -72,19 +74,19 @@ export default function RegisterScreen() {
           resizeMode="contain"
         />
         <Text style={styles.title}>DressMatch</Text>
-        <Text style={styles.subtitle}>Créez votre compte</Text>
+        <Text style={styles.subtitle}>{t('auth.createAccount')}</Text>
       </View>
 
       <View style={styles.formContainer}>
         <TextInput
-          placeholder="Nom d'utilisateur"
+          placeholder={t('auth.username')}
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
         />
         
         <TextInput
-          placeholder="Email"
+          placeholder={t('auth.email')}
           value={email}
           onChangeText={setEmail}
           autoCapitalize="none"
@@ -92,14 +94,14 @@ export default function RegisterScreen() {
         />
         
         <TextInput
-          placeholder="Mot de passe"
+          placeholder={t('auth.password')}
           value={password}
           onChangeText={setPassword}
           secureTextEntry
         />
         
         <TextInput
-          placeholder="Confirmer le mot de passe"
+          placeholder={t('auth.confirmPassword')}
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
@@ -113,14 +115,14 @@ export default function RegisterScreen() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>S'inscrire</Text>
+            <Text style={styles.buttonText}>{t('auth.register')}</Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>Vous avez déjà un compte ?</Text>
+          <Text style={styles.footerText}>{t('auth.alreadyHaveAccount')}</Text>
           <TouchableOpacity onPress={() => router.push('/auth/login')}>
-            <Text style={styles.link}>Se connecter</Text>
+            <Text style={styles.link}>{t('auth.login')}</Text>
           </TouchableOpacity>
         </View>
       </View>

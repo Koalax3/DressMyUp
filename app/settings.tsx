@@ -5,7 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useTranslation } from '@/i18n/useTranslation';
 import { ColorsTheme, DarkColorsTheme } from '@/constants/Colors';
+import LanguageSelector from '@/components/selector/LanguageSelector';
 
 type SettingItem = {
   id: string;
@@ -20,18 +22,19 @@ type SettingItem = {
 export default function SettingsScreen() {
   const { user, signOut } = useAuth();
   const { isDarkMode, toggleTheme } = useTheme();
+  const { t } = useTranslation();
   
   // Utiliser le thème approprié en fonction du mode
   const colors = isDarkMode ? DarkColorsTheme : ColorsTheme;
 
   const handleSignOut = async () => {
     Alert.alert(
-      'Déconnexion',
-      'Êtes-vous sûr de vouloir vous déconnecter ?',
+      t('auth.logout'),
+      t('auth.logoutConfirmation'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { 
-          text: 'Déconnexion', 
+          text: t('auth.logout'), 
           style: 'destructive', 
           onPress: async () => {
             await signOut();
@@ -53,19 +56,19 @@ export default function SettingsScreen() {
   const settings: SettingItem[] = [
     {
       id: 'edit_profile',
-      title: 'Éditer mon profil',
+      title: t('settings.account'),
       icon: 'person-outline',
       onPress: navigateToEditProfile
     },
     {
       id: 'preferred_styles',
-      title: 'Styles préférés',
+      title: t('settings.preferredStyles'),
       icon: 'heart-outline',
       onPress: navigateToPreferredStyles
     },
     {
       id: 'dark_mode',
-      title: 'Mode sombre',
+      title: t('settings.theme'),
       icon: 'moon-outline',
       onPress: toggleTheme,
       rightComponent: (
@@ -80,7 +83,7 @@ export default function SettingsScreen() {
     },
     {
       id: 'logout',
-      title: 'Déconnexion',
+      title: t('auth.logout'),
       icon: 'log-out-outline',
       iconColor: '#FF3B30',
       onPress: handleSignOut,
@@ -125,23 +128,33 @@ export default function SettingsScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={isDarkMode ? colors.text.main : "#333"} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: isDarkMode ? colors.text.main : "#333" }]}>Paramètres</Text>
+        <Text style={[styles.title, { color: isDarkMode ? colors.text.main : "#333" }]}>{t('settings.title')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text.light : "#999" }]}>Compte</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text.light : "#999" }]}>{t('settings.account')}</Text>
           {settings.slice(0, 1).map(renderSettingItem)}
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text.light : "#999" }]}>Préférences</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text.light : "#999" }]}>{t('settings.preferences')}</Text>
           {settings.slice(1, 3).map(renderSettingItem)}
+          <View style={[
+            styles.settingItem,
+            { backgroundColor: isDarkMode ? colors.background.deep : '#fff', 
+              borderBottomColor: isDarkMode ? colors.background.dark : '#f0f0f0',
+              paddingVertical: 0,
+              paddingHorizontal: 0,
+              height: 'auto' }
+          ]}>
+            <LanguageSelector />
+          </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text.light : "#999" }]}>Système</Text>
+          <Text style={[styles.sectionTitle, { color: isDarkMode ? colors.text.light : "#999" }]}>{t('settings.system')}</Text>
           {settings.slice(3).map(renderSettingItem)}
         </View>
       </ScrollView>

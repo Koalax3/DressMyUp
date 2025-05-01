@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ColorsTheme } from '@/constants/Colors';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export type Option = {
   key: string;
@@ -42,16 +43,17 @@ const GenericSelector: React.FC<GenericSelectorProps> = ({
   selectedOption,
   onOptionSelect,
   title,
-  placeholder = 'Sélectionner une option',
+  placeholder,
   multiSelect = false,
   displayIcon = false,
   iconSize = 18,
   iconColor = ColorsTheme.primary.main,
   children,
   searchable = false,
-  searchPlaceholder = 'Rechercher...',
+  searchPlaceholder,
   customHeader
 }) => {
+  const { t } = useTranslation();
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const { isDarkMode } = useTheme();
@@ -61,6 +63,10 @@ const GenericSelector: React.FC<GenericSelectorProps> = ({
       ? (Array.isArray(selectedOption) ? selectedOption : selectedOption ? [selectedOption] : [])
       : []
   );
+
+  // Valeurs par défaut avec internationalisation
+  const defaultPlaceholder = placeholder || t('common.select');
+  const defaultSearchPlaceholder = searchPlaceholder || t('common.search');
 
   // Convertir options en tableau d'objets si c'est un objet
   const optionsArray: Option[] = Array.isArray(options) 
@@ -118,16 +124,18 @@ const GenericSelector: React.FC<GenericSelectorProps> = ({
   };
 
   const getSelectedLabel = (): string => {
-    if (!selectedOption) return placeholder;
+    if (!selectedOption) return defaultPlaceholder;
     
     if (multiSelect && Array.isArray(selectedOption)) {
-        if (selectedOption.length === 0) return placeholder;
+        if (selectedOption.length === 0) return defaultPlaceholder;
         const options = optionsArray.filter(opt => selectedOption.includes(opt.key));
-        if (options.length > 2) return `${options[0].label} ${options[1].label} + ${options.length - 2} options`;
+        if (options.length > 2) {
+          return `${options[0].label} ${options[1].label} + ${options.length - 2} ${t('common.moreOptions')}`;
+        }
         return options.map(opt => opt.label).join(', ');
     } else {
       const option = optionsArray.find(opt => opt.key === selectedOption);
-      return option ? option.label : placeholder;
+      return option ? option.label : defaultPlaceholder;
     }
   };
 
@@ -182,7 +190,7 @@ const GenericSelector: React.FC<GenericSelectorProps> = ({
         <Ionicons name="search" size={20} color={colors.text.light} style={styles.searchIcon} />
         <TextInput
           style={[styles.searchInput, { color: colors.text.main }]}
-          placeholder={searchPlaceholder}
+          placeholder={defaultSearchPlaceholder}
           value={searchText}
           onChangeText={setSearchText}
           placeholderTextColor={colors.text.light}
@@ -203,7 +211,7 @@ const GenericSelector: React.FC<GenericSelectorProps> = ({
     return (
       <View style={styles.emptyContainer}>
         <Text style={[styles.emptyText, { color: colors.text.light }]}>
-          Aucun résultat trouvé
+          {t('common.noResults')}
         </Text>
       </View>
     );
@@ -250,15 +258,23 @@ const GenericSelector: React.FC<GenericSelectorProps> = ({
                 contentContainerStyle={styles.optionsList}
               />
             )}
-
+            
             {multiSelect && (
-              <View style={[styles.confirmButtonContainer, { borderTopColor: colors.text.lighter }]}>
-                <TouchableOpacity 
+              <View style={[styles.actionButtons, { borderTopColor: colors.text.lighter }]}>
+                <TouchableOpacity
+                  style={[styles.cancelButton, { backgroundColor: colors.gray }]}
+                  onPress={closeModal}
+                >
+                  <Text style={[styles.buttonText, { color: colors.text.main }]}>
+                    {t('common.cancel')}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={[styles.confirmButton, { backgroundColor: colors.primary.main }]}
                   onPress={confirmSelection}
                 >
-                  <Text style={[styles.confirmButtonText, { color: colors.text.bright }]}>
-                    Confirmer ({localSelection.length} sélection{localSelection.length > 1 || localSelection.length === 0 ? 's' : ''})
+                  <Text style={[styles.buttonText, { color: colors.text.bright }]}>
+                    {t('common.confirm')}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -355,9 +371,16 @@ const styles = StyleSheet.create({
   checkmark: {
     marginLeft: 8,
   },
-  confirmButtonContainer: {
-    borderTopWidth: 1,
+  actionButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     padding: 16,
+  },
+  cancelButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
   },
   confirmButton: {
     paddingVertical: 12,
@@ -365,7 +388,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignItems: 'center',
   },
-  confirmButtonText: {
+  buttonText: {
     fontSize: 16,
     fontWeight: 'bold',
   },

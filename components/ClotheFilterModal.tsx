@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ClothingItem } from '../types';
-import { COLORS } from '@/constants/Clothes';
+import { COLORS, ColorType } from '@/constants/Clothes';
 import { PATTERNS, Pattern } from '@/constants/Clothes';
 import { MATERIALS } from '@/constants/Materials';
 import ColorDot from './ColorDot';
@@ -22,6 +22,7 @@ import MaskedView from '@react-native-masked-view/masked-view';
 import { ColorsTheme, getThemeColors } from '@/constants/Colors';
 import StripedElement from './StripedElement';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useTranslation } from '@/i18n/useTranslation';
 
 const { width } = Dimensions.get('window');
 
@@ -62,6 +63,7 @@ const ClotheFilterModal = ({
 }: ClotheFilterModalProps) => {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
 
   // S'assurer que toutes les propriétés sont définies dans les filtres
   const safeCurrentFilters: ClotheFilters = {
@@ -201,11 +203,12 @@ const ClotheFilterModal = ({
     // Déterminer le nom à afficher selon le type
     const getDisplayName = (): string => {
       if (type === 'color') {
-        return (item as typeof COLORS[0]).name;
+        const colorItem = item as ColorType;
+        return t(`clothingColors.${colorItem.id}`);
       } else if (type === 'pattern') {
-        return PATTERNS[item as keyof typeof PATTERNS] || item as string;
+        return t(`clothingPatterns.${item as string}`) || item as string;
       } else if (type === 'material') {
-        return MATERIALS[item as string] || item as string;
+        return t(`clothingMaterials.${item as string}`) || item as string;
       }
       return item as string;
     };
@@ -268,8 +271,8 @@ const ClotheFilterModal = ({
   const renderColorItem = ({ item }: { item: typeof COLORS[0] }) => (
     <FilterItem
       item={item}
-      isSelected={localFilters.colors.includes(item.name)}
-      onToggle={() => toggleColor(item.name)}
+      isSelected={localFilters.colors.includes(item.id)}
+      onToggle={() => toggleColor(item.id)}
       type="color"
     />
   );
@@ -309,8 +312,8 @@ const ClotheFilterModal = ({
     }
     
     // Récupérer les couleurs sélectionnées
-    return localFilters.colors.map(colorName => {
-      const colorObj = COLORS.find(c => c.name === colorName);
+    return localFilters.colors.map(colorId => {
+      const colorObj = COLORS.find(c => c.id === colorId);
       return colorObj ? colorObj.value : ColorsTheme.primary.main;
     });
   };
@@ -330,7 +333,7 @@ const ClotheFilterModal = ({
           <TouchableOpacity onPress={() => onClose()} style={styles.closeButton}>
             <Ionicons name="close" size={24} color={colors.text.main} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text.main }]}>Filtres</Text>
+          <Text style={[styles.title, { color: colors.text.main }]}>{t('clothing.filters')}</Text>
           <View style={{width: 24}}></View>
         </View>
 
@@ -346,7 +349,7 @@ const ClotheFilterModal = ({
                 activeTab === 'brands' && [styles.activeTabText, { color: colors.primary.main }]
               ]}
             >
-              Marques
+              {t('clothing.brands')}
               {localFilters.brands.length > 0 && ` (${localFilters.brands.length})`}
             </Text>
           </TouchableOpacity>
@@ -361,7 +364,7 @@ const ClotheFilterModal = ({
                 activeTab === 'colors' && [styles.activeTabText, { color: colors.primary.main }]
               ]}
             >
-              Couleurs
+              {t('clothing.colors')}
               {localFilters.colors.length > 0 && ` (${localFilters.colors.length})`}
             </Text>
           </TouchableOpacity>
@@ -376,7 +379,7 @@ const ClotheFilterModal = ({
                 activeTab === 'patterns' && [styles.activeTabText, { color: colors.primary.main }]
               ]}
             >
-              Motifs
+              {t('clothing.patterns')}
               {localFilters.patterns.length > 0 && ` (${localFilters.patterns.length})`}
             </Text>
           </TouchableOpacity>
@@ -391,7 +394,7 @@ const ClotheFilterModal = ({
                 activeTab === 'materials' && [styles.activeTabText, { color: colors.primary.main }]
               ]}
             >
-              Matériaux
+              {t('clothing.materials')}
               {localFilters.materials.length > 0 && ` (${localFilters.materials.length})`}
             </Text>
           </TouchableOpacity>
@@ -408,7 +411,7 @@ const ClotheFilterModal = ({
                 />
               ) : (
                 <View style={styles.emptyContainer}>
-                  <Text style={[styles.emptyText, { color: colors.text.light }]}>Aucune marque disponible</Text>
+                  <Text style={[styles.emptyText, { color: colors.text.light }]}>{t('clothing.noBrandsAvailable')}</Text>
                 </View>
               )}
             </>
@@ -419,7 +422,7 @@ const ClotheFilterModal = ({
               <FlatList
                 data={COLORS}
                 renderItem={renderColorItem}
-                keyExtractor={(item) => item.name}
+                keyExtractor={(item) => item.id}
               />
             </>
           ) : null}
@@ -434,7 +437,7 @@ const ClotheFilterModal = ({
                 />
               ) : (
                 <View style={styles.emptyContainer}>
-                  <Text style={[styles.emptyText, { color: colors.text.light }]}>Aucun motif disponible</Text>
+                  <Text style={[styles.emptyText, { color: colors.text.light }]}>{t('clothing.noPatternsAvailable')}</Text>
                 </View>
               )}
             </>
@@ -450,7 +453,7 @@ const ClotheFilterModal = ({
                 />
               ) : (
                 <View style={styles.emptyContainer}>
-                  <Text style={[styles.emptyText, { color: colors.text.light }]}>Aucun matériau disponible</Text>
+                  <Text style={[styles.emptyText, { color: colors.text.light }]}>{t('clothing.noMaterialsAvailable')}</Text>
                 </View>
               )}
             </>
@@ -485,7 +488,9 @@ const ClotheFilterModal = ({
                 />
               </View>
               <Text style={[styles.colorFilterModeDescription, { color: colors.text.light }]}>
-                {colorFilterMode === 'sameItem' ? 'Vêtements composés de toutes les couleurs' : 'Vêtements composés d\'une de ces couleurs'}
+                {colorFilterMode === 'sameItem' 
+                  ? t('clothing.clothingWithAllColors') 
+                  : t('clothing.clothingWithAnyColor')}
               </Text>
             </View>
           )}
@@ -494,14 +499,14 @@ const ClotheFilterModal = ({
               style={[styles.resetFiltersButton, { backgroundColor: colors.secondary.main }]}
               onPress={resetFilters}
             >
-              <Text style={[styles.resetFiltersButtonText]}>Réinitialiser</Text>
+              <Text style={[styles.resetFiltersButtonText]}>{t('common.reset')}</Text>
             </TouchableOpacity>
             
             <TouchableOpacity 
               style={[styles.applyButton, { backgroundColor: colors.primary.main }]}
               onPress={() => applyFilters()}
             >
-              <Text style={[styles.applyButtonText, { color: colors.text.bright }]}>Appliquer</Text>
+              <Text style={[styles.applyButtonText, { color: colors.text.bright }]}>{t('common.apply')}</Text>
             </TouchableOpacity>
           </View>
         </View>

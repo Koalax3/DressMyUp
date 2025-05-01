@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal, FlatList, TextInput, SafeAreaView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BRANDS } from '../constants/Clothes';
+import { BRANDS } from '@/constants/Clothes';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 

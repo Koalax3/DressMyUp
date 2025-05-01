@@ -12,6 +12,7 @@ import { ColorsTheme } from "@/constants/Colors";
 import { isDressMatch, isPerfectMatch, isSimilarMatch } from "@/services/matchingService";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getThemeColors } from "@/constants/Colors";
+import { useTranslation } from "@/i18n/useTranslation";
 
 // Définir les types de matching
 export enum MatchType {
@@ -44,6 +45,7 @@ export default function ClotheView({
     const [matchType, setMatchType] = useState<MatchType>(MatchType.NONE);
     const { isDarkMode } = useTheme();
     const colors = getThemeColors(isDarkMode);
+    const { t } = useTranslation();
 
     useEffect(() => {
       if (showMatchStatus && user) {
@@ -161,7 +163,7 @@ export default function ClotheView({
               <View style={styles.clothingInfo}>
                 <Text style={[styles.clothingName, { color: colors.text.main }]}>{clothingItem.name}</Text>
                 <Text style={[styles.clothingType, { color: colors.text.light }]}>
-                  {types[clothingItem.type]} - {subtypesByType[clothingItem.type][clothingItem.subtype]}
+                  {t(`clothingTypes.${clothingItem.type}`)} - {t(`clothingSubtypes.${clothingItem.type}.${clothingItem.subtype}`)}
                 </Text>
               </View>
               <View style={styles.rightContainer}>

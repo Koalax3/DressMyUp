@@ -11,14 +11,15 @@ import * as OutfitService from '@/services/outfitService';
 import * as StorageService from '@/services/storageService';
 import * as ClothingService from '@/services/clothingService';
 import { occasions } from '@/constants/Outfits';
-import GenderSelector from '@/components/GenderSelector';
+import GenderSelector from '@/components/selector/GenderSelector';
 import DraggableClothingList from '@/components/DraggableClothingList';
 import { updateClothesPositions } from '@/services/clotheOutfitsService';
-import GenericSelector from '@/components/GenericSelector';
+import GenericSelector from '@/components/selector/GenericSelector';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
-import SeasonSelector from '@/components/SeasonSelector';
+import SeasonSelector from '@/components/selector/SeasonSelector';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from '@/i18n/useTranslation';
 
 // Type pour les vêtements avec position
 type ClothingWithPosition = ClothingItem & { position?: number };
@@ -31,6 +32,7 @@ export default function EditOutfitScreen() {
   const outfitId = params.id as string;
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
   
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -101,7 +103,7 @@ export default function EditOutfitScreen() {
       if (!outfitDetails || outfitDetails.user_id !== user?.id) {
         Toast.show({
           type: 'error',
-          text1: "Vous n'êtes pas autorisé à modifier cette tenue"
+          text1: t('errors.permissionDenied')
         });
         router.back();
         return;
@@ -140,7 +142,7 @@ export default function EditOutfitScreen() {
       console.error('Erreur lors de la récupération des détails de la tenue:', error);
       Toast.show({
         type: 'error',
-        text1: 'Impossible de charger les détails de la tenue'
+        text1: t('outfit.loadDetailError')
       });
     } finally {
       setLoading(false);
@@ -157,7 +159,7 @@ export default function EditOutfitScreen() {
       console.error('Erreur lors de la récupération des vêtements:', error);
       Toast.show({
         type: 'error',
-        text1: 'Impossible de charger vos vêtements'
+        text1: t('wardrobe.loadError')
       });
     }
   };
@@ -210,7 +212,7 @@ export default function EditOutfitScreen() {
     if (!name || clothescreateOutfit.length === 0) {
       Toast.show({
         type: 'error',
-        text1: 'Veuillez donner un nom à votre tenue et sélectionner au moins un vêtement'
+        text1: t('errors.requiredField')
       });
       return;
     }
@@ -247,7 +249,7 @@ export default function EditOutfitScreen() {
       if (!success) {
         Toast.show({
           type: 'error',
-          text1: 'Impossible de mettre à jour la tenue. Veuillez réessayer.'
+          text1: t('outfit.loadDetailError')
         });
         return;
       }
@@ -264,7 +266,7 @@ export default function EditOutfitScreen() {
       );
 
       if (!clothesSuccess) {
-        console.error('Erreur lors de la mise à jour des vêtements associés à la tenue');
+        console.error(t('errors.unexpectedError'));
       }
 
       // Mettre à jour les positions
@@ -277,7 +279,7 @@ export default function EditOutfitScreen() {
 
       Toast.show({
         type: 'success',
-        text1: 'Tenue mise à jour avec succès!'
+        text1: t('success.updated')
       });
       
       router.back();
@@ -285,7 +287,7 @@ export default function EditOutfitScreen() {
       console.error('Erreur:', error);
       Toast.show({
         type: 'error',
-        text1: 'Une erreur s\'est produite. Veuillez réessayer.'
+        text1: t('errors.tryAgain')
       });
     } finally {
       setSaving(false);
@@ -297,7 +299,7 @@ export default function EditOutfitScreen() {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.main} />
-          <Text style={{ marginTop: 10, color: colors.text.main }}>Chargement de la tenue...</Text>
+          <Text style={{ marginTop: 10, color: colors.text.main }}>{t('outfit.loading')}</Text>
         </View>
       </SafeAreaView>
     );
@@ -309,34 +311,34 @@ export default function EditOutfitScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.text.main} />
         </TouchableOpacity>
-        <Text style={[styles.title, { color: colors.text.main }]}>Modifier la tenue</Text>
+        <Text style={[styles.title, { color: colors.text.main }]}>{t('outfits.editOutfit')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView style={styles.content}>
         <View style={styles.formSection}>
           {/* Section pour l'image de la tenue */}
-          <Text style={[styles.sectionTitle, { marginTop: 20, color: colors.text.main }]}>Image de la tenue</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 20, color: colors.text.main }]}>{t('outfit.image')}</Text>
           <ImagePicker 
             imageUri={outfitImage}
             onImageSelected={(uri) => setOutfitImage(uri)}
             onImageRemoved={() => setOutfitImage(null)}
             uploading={uploadingImage}
           />
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Informations</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('common.information')}</Text>
           <TextInput
             style={[styles.input, { 
               backgroundColor: isDarkMode ? colors.background.deep : '#f5f5f5',
               color: colors.text.main 
             }]}
-            placeholder="Nom de la tenue*"
+            placeholder={t('outfit.nameRequired')}
             placeholderTextColor={colors.text.light}
             value={name}
             onChangeText={setName}
           />
           
           {/* Description de la tenue */}
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Description</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('outfit.description')}</Text>
           <TextInput
             style={[
               styles.input, 
@@ -350,12 +352,12 @@ export default function EditOutfitScreen() {
             numberOfLines={4}
             value={description}
             onChangeText={setDescription}
-            placeholder="Décrivez votre tenue (optionnel)"
+            placeholder={t('outfit.descriptionOptional')}
             placeholderTextColor={colors.text.light}
           />
 
           {/* Saison */}
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Saison</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('clothing.season')}</Text>
           <SeasonSelector 
             selectedSeason={season} 
             onSelectSeason={setSeason} 
@@ -363,18 +365,18 @@ export default function EditOutfitScreen() {
 
           {/* Occasion */}
           <View style={{ marginBottom: 20 }}>
-            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Style</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('explore.style')}</Text>
             <GenericSelector
               options={occasions}
               selectedOption={occasion}
               onOptionSelect={(value) => setOccasion(value as string)}
-              title="Sélectionner un style"
-              placeholder="Choisir un style"
+              title={t('outfit.selectStyle')}
+              placeholder={t('outfit.chooseStyle')}
             />
           </View>
 
           {/* Genre */}
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Genre</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('explore.gender')}</Text>
           <GenderSelector 
             selectedGender={gender}
             onGenderChange={setGender}
@@ -382,7 +384,7 @@ export default function EditOutfitScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Vêtements</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('outfit.clothes')}</Text>
           <View style={styles.draggableListContainer}>
             <DraggableClothingList/>
           </View>
@@ -397,7 +399,7 @@ export default function EditOutfitScreen() {
         >
           <Ionicons name="shirt-outline" size={20} color="#fff" style={{ marginRight: 8 }} />
           <Text style={styles.wardrobeButtonText}>
-            {clothescreateOutfit.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
+            {clothescreateOutfit.length > 0 ? t('outfit.modifySelection') : t('outfit.chooseClothes')}
           </Text>
         </TouchableOpacity>
 
@@ -413,7 +415,7 @@ export default function EditOutfitScreen() {
           {saving ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.saveButtonText}>Enregistrer les modifications</Text>
+            <Text style={styles.saveButtonText}>{t('outfits.saveChanges')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

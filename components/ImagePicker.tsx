@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import { ASPECT_RADIO_IMAGE, QUALITY_IMAGE } from '@/constants/Common';
-
+import { useTranslation } from '@/i18n/useTranslation';
 interface ImagePickerProps {
   imageUri: string | null;
   onImageSelected: (uri: string) => void;
@@ -22,7 +22,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
   const [error, setError] = useState<string | null>(null);
-
+  const { t } = useTranslation();
   const pickImage = async () => {
     try {
       setError(null);
@@ -31,7 +31,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
       const { status } = await ImagePickerExpo.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
-        setError('Nous avons besoin de votre permission pour accéder à votre galerie.');
+        setError(t('imagePicker.permissionRequired'));
         return;
       }
       
@@ -57,7 +57,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
       }
     } catch (error) {
       console.error('Erreur lors de la sélection de l\'image:', error);
-      setError('Une erreur s\'est produite lors de la sélection de l\'image.');
+      setError(t('imagePicker.errorSelectingImage'));
     }
   };
 
@@ -69,7 +69,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
       const { status } = await ImagePickerExpo.requestCameraPermissionsAsync();
       
       if (status !== 'granted') {
-        setError('Nous avons besoin de votre permission pour accéder à votre caméra.');
+        setError(t('imagePicker.permissionRequired'));
         return;
       }
       
@@ -94,7 +94,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
       }
     } catch (error) {
       console.error('Erreur lors de la prise de photo:', error);
-      setError('Une erreur s\'est produite lors de la prise de photo.');
+      setError(t('imagePicker.errorTakingPhoto'));
     }
   };
 
@@ -107,7 +107,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
           {uploading ? (
             <View style={[styles.uploadingOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.6)' }]}>
               <ActivityIndicator size="large" color={colors.primary.main} />
-              <Text style={[styles.uploadingText, { color: colors.text.bright }]}>Chargement...</Text>
+              <Text style={[styles.uploadingText, { color: colors.text.bright }]}>{t('imagePicker.loading')}</Text>
             </View>
           ) : (
             <TouchableOpacity 
@@ -126,7 +126,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
               onPress={pickImage}
             >
               <Ionicons name="image-outline" size={28} color={colors.white} />
-              <Text style={[styles.optionButtonText, { color: colors.white }]}>Galerie</Text>
+              <Text style={[styles.optionButtonText, { color: colors.white }]}>{t('imagePicker.gallery')}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -134,7 +134,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
               onPress={takePicture}
             >
               <Ionicons name="camera-outline" size={28} color={colors.white} />
-              <Text style={[styles.optionButtonText, { color: colors.white }]}>Appareil photo</Text>
+              <Text style={[styles.optionButtonText, { color: colors.white }]}>{t('imagePicker.camera')}</Text>
             </TouchableOpacity>
           </View>
           

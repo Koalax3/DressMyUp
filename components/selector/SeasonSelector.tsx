@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/contexts/ThemeContext';
 import { ColorsTheme, getThemeColors } from '@/constants/Colors';
-
+import { useTranslation } from '@/i18n/useTranslation';
 type Season = 'all' | 'spring' | 'summer' | 'fall' | 'winter';
 
 interface SeasonSelectorProps {
@@ -17,13 +17,13 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({
 }) => {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
-
-  const seasons: { value: Season; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { value: 'all', label: 'Toutes', icon: 'calendar-outline' },
-    { value: 'spring', label: 'Printemps', icon: 'flower-outline' },
-    { value: 'summer', label: 'Été', icon: 'sunny-outline' },
-    { value: 'fall', label: 'Automne', icon: 'leaf-outline' },
-    { value: 'winter', label: 'Hiver', icon: 'snow-outline' }
+  const { t } = useTranslation();
+  const seasons: { value: Season; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { value: 'all', icon: 'calendar-outline' },
+    { value: 'spring', icon: 'flower-outline' },
+    { value: 'summer', icon: 'sunny-outline' },
+    { value: 'fall', icon: 'leaf-outline' },
+    { value: 'winter', icon: 'snow-outline' }
   ];
 
   return (
@@ -50,7 +50,7 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({
               selectedSeason === season.value && [styles.seasonButtonTextActive]
             ]}
           >
-            {season.label}
+            {t(`seasons.${season.value}`)}
           </Text>
         </TouchableOpacity>
       ))}

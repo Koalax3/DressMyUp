@@ -28,7 +28,7 @@ const EmptyWardrobeModal = ({ visible, onClose, closeable = false }: EmptyWardro
           <View style={styles.emptyModalContent}>
             <Ionicons name="shirt-outline" size={80} color="#F97A5C" />
             <Text style={styles.emptyModalText}>
-              Pour créer une tenue, vous devez d'abord ajouter des vêtements à votre garde-robe.
+              Pour créer une tenue, vous devez d'abord ajouter des vêtements à votre garde-robe. Soit en ajoutant des vêtements manuellement, soit en ajoutant depuis les tenues de la communauté.
             </Text>
             <TouchableOpacity 
               style={styles.emptyModalButton}
@@ -38,6 +38,15 @@ const EmptyWardrobeModal = ({ visible, onClose, closeable = false }: EmptyWardro
               }}
             >
               <Text style={styles.emptyModalButtonText}>Ajouter un vêtement</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.emptyModalButton}
+              onPress={() => {
+                onClose();
+                router.replace('/explore');
+              }}
+            >
+              <Text style={styles.emptyModalButtonText}>Explorer les tenues</Text>
             </TouchableOpacity>
           </View>
         </View>

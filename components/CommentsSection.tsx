@@ -19,6 +19,7 @@ import { ColorsTheme } from '@/constants/Colors';
 import { DEFAULT_USER_AVATAR } from '@/constants/Users';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useTranslation } from '@/i18n/useTranslation';
 
 const { width } = Dimensions.get('window');
 
@@ -45,6 +46,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   const swipeableRefs = useRef<Map<string, Swipeable>>(new Map());
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -97,7 +99,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       }
     } catch (error) {
       console.error('Erreur lors de l\'ajout du commentaire:', error);
-      Alert.alert('Erreur', 'Impossible d\'ajouter votre commentaire. Veuillez réessayer.');
+      Alert.alert(t('errors.generic'), t('errors.commentAddFailed'));
     } finally {
       setCommenting(false);
     }
@@ -125,7 +127,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
       }
     } catch (error) {
       console.error('Erreur lors de la suppression du commentaire:', error);
-      Alert.alert('Erreur', 'Impossible de supprimer ce commentaire. Veuillez réessayer.');
+      Alert.alert(t('errors.generic'), t('errors.commentDeleteFailed'));
     } finally {
       setDeleting(false);
     }
@@ -133,17 +135,17 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
 
   const confirmDeleteComment = (commentId: string) => {
     Alert.alert(
-      'Supprimer le commentaire',
-      'Êtes-vous sûr de vouloir supprimer ce commentaire ?',
+      t('comments.deleteComment'),
+      t('comments.deleteCommentConfirmation'),
       [
-        { text: 'Annuler', style: 'cancel', onPress: () => {
+        { text: t('common.cancel'), style: 'cancel', onPress: () => {
           // Fermer le swipeable si l'utilisateur annule
           const swipeable = swipeableRefs.current.get(commentId);
           if (swipeable) {
             swipeable.close();
           }
         }},
-        { text: 'Supprimer', style: 'destructive', onPress: () => deleteComment(commentId) }
+        { text: t('common.delete'), style: 'destructive', onPress: () => deleteComment(commentId) }
       ]
     );
   };
@@ -163,7 +165,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
           ) : (
             <>
               <Ionicons name="trash-outline" size={20} color={colors.text.bright} />
-              <Text style={[styles.deleteActionText, { color: colors.text.bright }]}>Supprimer</Text>
+              <Text style={[styles.deleteActionText, { color: colors.text.bright }]}>{t('common.delete')}</Text>
             </>
           )}
         </TouchableOpacity>
@@ -173,7 +175,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Commentaires</Text>
+      <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('comments.title')}</Text>
       
       {user && (
         <View style={styles.commentForm}>
@@ -183,7 +185,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
               backgroundColor: colors.gray,
               color: colors.text.main
             }]}
-            placeholder="Ajouter un commentaire..."
+            placeholder={t('comments.addComment')}
             placeholderTextColor={colors.text.light}
             value={commentText}
             onChangeText={setCommentText}
@@ -201,14 +203,14 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
             {commenting ? (
               <ActivityIndicator size="small" color={colors.white} />
             ) : (
-              <Text style={[styles.commentButtonText, { color: colors.white }]}>Envoyer</Text>
+              <Text style={[styles.commentButtonText, { color: colors.white }]}>{t('comments.send')}</Text>
             )}
           </TouchableOpacity>
         </View>
       )}
 
       {comments.length === 0 ? (
-        <Text style={[styles.noComments, { color: colors.text.light }]}>Aucun commentaire pour le moment.</Text>
+        <Text style={[styles.noComments, { color: colors.text.light }]}>{t('comments.noComments')}</Text>
       ) : (
         comments.map((comment) => {
           const isOwner = currentUserId === comment.user_id;
@@ -242,7 +244,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
                 </View>
                 <Text style={[styles.commentContent, { color: colors.text.main }]}>{comment.content}</Text>
                 {isOwner && (
-                  <Text style={[styles.swipeHint, { color: colors.text.light }]}>Glisser vers la gauche pour accéder aux options</Text>
+                  <Text style={[styles.swipeHint, { color: colors.text.light }]}>{t('comments.swipeHint')}</Text>
                 )}
               </View>
             </Swipeable>

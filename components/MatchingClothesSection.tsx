@@ -11,6 +11,7 @@ import { router } from 'expo-router';
 import { ColorsTheme, getThemeColors } from '@/constants/Colors';
 import { useClothing } from '@/contexts/ClothingContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useTranslation } from '@/i18n/useTranslation';
 
 type MatchingClothesSectionProps = {
   currentItem: ClothingItem;
@@ -26,6 +27,7 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
   const [similarMatches, setSimilarMatches] = useState<ClothingItem[]>([]);
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (user) {
@@ -83,7 +85,7 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
       <LargeButton
         icon="shirt"
         color={ColorsTheme.background.main}
-        title="Ajouter à ma garde-robe"
+        title={t('clothing.addToWardrobe')}
         onPress={() => {
           setClothingToCopy(currentItem);
           router.push('/clothing/add');
@@ -94,12 +96,12 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
 
   return (
     <View style={styles.container}>
-      <Text style={{...styles.sectionTitle, color: colors.text.light}}>Dress Match<Ionicons onPress={() => Alert.alert('Dress Match', 'Dress Match compare le vêtement consulté avec les vêtements de ta garde-robe et ressort ceux qui ont des caractéristiques similaires.')} name="information-circle" size={16} style={{marginLeft: 10}} color={colors.primary.main} /></Text>
+      <Text style={{...styles.sectionTitle, color: colors.text.light}}>Dress Match<Ionicons onPress={() => Alert.alert(t('clothing.dressMatch'), t('clothing.dressMatchDescription'))} name="information-circle" size={16} style={{marginLeft: 10}} color={colors.primary.main} /></Text>
       {dressMatches.length > 0 && (
         <View style={styles.matchSection}>
           <View style={styles.matchTitleContainer}>
             <Image source={require('@/assets/images/dress-match.png')} style={styles.dressMatchImage} />
-            <Text style={{...styles.matchTitle, color: colors.text.main}}>Correspondances parfaites</Text>
+            <Text style={{...styles.matchTitle, color: colors.text.main}}>{t('clothing.perfectMatches')}</Text>
           </View>
           <FlatList
             data={dressMatches}
@@ -122,7 +124,7 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
         <View style={styles.matchSection}>
           <View style={styles.matchTitleContainer}>
             <Ionicons name="checkmark-circle" size={20} color={colors.match.main} />
-            <Text style={{...styles.matchTitle, color: colors.text.main}}>Fortes correspondances</Text>
+            <Text style={{...styles.matchTitle, color: colors.text.main}}>{t('clothing.strongMatches')}</Text>
           </View>
           <FlatList
             data={perfectMatches}
@@ -145,7 +147,7 @@ const MatchingClothesSection = ({ currentItem }: MatchingClothesSectionProps) =>
         <View style={styles.matchSection}>
           <View style={styles.matchTitleContainer}>
             <Ionicons name="alert-circle" size={20} color={colors.similar.main} />
-            <Text style={{...styles.matchTitle, color: colors.text.main}}>Vêtements similaires</Text>
+            <Text style={{...styles.matchTitle, color: colors.text.main}}>{t('clothing.similarItems')}</Text>
           </View>
           <FlatList
             data={similarMatches}

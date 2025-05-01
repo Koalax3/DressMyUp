@@ -1,9 +1,9 @@
 import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { genders } from '@/constants/Outfits';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
+import { useTranslation } from '@/i18n/useTranslation';
 
 type GenderSelectorProps = {
   selectedGender: string;
@@ -18,6 +18,7 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
 }) => {
   const {isDarkMode} = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
   return (
     <View style={[styles.genderContainer, containerStyle]}>
       <TouchableOpacity
@@ -26,7 +27,7 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
       >
         <Ionicons name="male-outline" size={18} color={selectedGender === 'male' ? colors.white : colors.text.main} />
         <Text style={[styles.genderButtonText, { color: colors.text.main }, selectedGender === 'male' && styles.genderButtonTextActive]}>
-          {genders['male']}
+          {t('genders.male')}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -35,7 +36,7 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
       >
         <Ionicons name="female-outline" size={18} color={selectedGender === 'female' ? colors.white : colors.text.main} />
         <Text style={[styles.genderButtonText, { color: colors.text.main }, selectedGender === 'female' && styles.genderButtonTextActive]}>
-          {genders['female']}
+          {t('genders.female')}
         </Text>
       </TouchableOpacity>
       <TouchableOpacity
@@ -44,7 +45,7 @@ const GenderSelector: React.FC<GenderSelectorProps> = ({
       >
         <Ionicons name="people-outline" size={18} color={selectedGender === 'unisex' ? colors.white : colors.text.main} />
         <Text style={[styles.genderButtonText, { color: colors.text.main }, selectedGender === 'unisex' && styles.genderButtonTextActive]}>
-          {genders['unisex']}
+          {t('genders.unisex')}
         </Text>
       </TouchableOpacity>
     </View>

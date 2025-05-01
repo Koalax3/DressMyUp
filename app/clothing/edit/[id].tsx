@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ActivityIndicator, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClothing } from '@/contexts/ClothingContext';
@@ -9,6 +9,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import ClothingFormWrapper, { ClothingFormData } from '@/components/ClothingForm';
 import Header from '@/components/Header';
+import { useTranslation } from '@/i18n/useTranslation';
 
 export default function EditClothingScreen() {
   const { id } = useLocalSearchParams();
@@ -18,6 +19,7 @@ export default function EditClothingScreen() {
   const [clothingData, setClothingData] = useState<Partial<ClothingFormData>>({});
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const fetchClothingData = async () => {
@@ -55,13 +57,14 @@ export default function EditClothingScreen() {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: colors.background.main }]}>
         <ActivityIndicator size="large" color={colors.primary.main} />
+        <Text style={{ marginTop: 10, color: colors.text.main }}>{t('common.loading')}</Text>
       </View>
     );
   }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <Header title="Modifier le vêtement" back />
+      <Header title={t('clothing.edit')} back />
       <ClothingFormWrapper 
         initialData={clothingData}
         mode="edit"

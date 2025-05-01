@@ -3,6 +3,7 @@ import { StyleSheet, View, Text, Switch, ViewStyle, StyleProp } from 'react-nati
 import { Ionicons } from '@expo/vector-icons';
 import { ColorsTheme, getThemeColors } from '@/constants/Colors';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useTranslation } from '@/i18n/useTranslation';
 
 interface PublicSwitchProps {
   isPublic: boolean;
@@ -15,12 +16,17 @@ interface PublicSwitchProps {
 const PublicSwitch: React.FC<PublicSwitchProps> = ({ 
   isPublic, 
   onToggle, 
-  label = "Rendre public",
+  label,
   disabled = false,
   style = {}
 }) => {
   const { isDarkMode } = useTheme();
+  const { t } = useTranslation();
   const colors = getThemeColors(isDarkMode);
+  
+  // Utiliser le label fourni ou la traduction par défaut
+  const switchLabel = label || t('outfit.makePublic');
+  
   return (
     <View style={[styles.container, style]}>
       <View style={styles.labelContainer}>
@@ -30,7 +36,7 @@ const PublicSwitch: React.FC<PublicSwitchProps> = ({
           color={colors.text.main} 
           style={styles.icon}
         />
-        <Text style={{...styles.label, color: colors.text.main}}>{label}</Text>
+        <Text style={{...styles.label, color: colors.text.main}}>{switchLabel}</Text>
       </View>
       <Switch
         value={isPublic}

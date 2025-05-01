@@ -11,17 +11,18 @@ import ImagePicker from '../../components/ImagePicker';
 import * as OutfitService from '../../services/outfitService';
 import * as StorageService from '../../services/storageService';
 import { occasions } from '@/constants/Outfits';
-import GenderSelector from '@/components/GenderSelector';
+import GenderSelector from '@/components/selector/GenderSelector';
 import { associateClothesToOutfit } from '@/services/clotheOutfitsService';
 import { MatchType } from '@/components/ClotheView';
 import DraggableClothingList from '@/components/DraggableClothingList';
 import EmptyWardrobeModal from '@/components/EmptyWardrobeModal';
-import GenericSelector from '@/components/GenericSelector';
+import GenericSelector from '@/components/selector/GenericSelector';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
-import SeasonSelector from '@/components/SeasonSelector';
+import SeasonSelector from '@/components/selector/SeasonSelector';
 import Header from '@/components/Header';
 import Toast from 'react-native-toast-message';
+import { useTranslation } from '@/i18n/useTranslation';
 
 // Type pour les vêtements avec position
 type ClothingWithPosition = ClothingItem & { position?: number };
@@ -32,6 +33,7 @@ export default function CreateOutfitScreen() {
   const { clothes: clothesFromContext, isLoading: isLoadingClothes, refreshClothes, hasClothes } = useClothing();
   const { clothescreateOutfit, setClothescreateOutfit } = useOutfit();
   const params = useLocalSearchParams();
+  const { t } = useTranslation();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -138,7 +140,7 @@ export default function CreateOutfitScreen() {
     if (!user) return;
     
     if (!name || clothescreateOutfit.length === 0) {
-      Alert.alert('Erreur', 'Veuillez donner un nom à votre tenue et sélectionner au moins un vêtement');
+      Alert.alert(t('errors.generic'), t('errors.requiredField'));
       return;
     }
 
@@ -165,7 +167,7 @@ export default function CreateOutfitScreen() {
       const newOutfit = await OutfitService.createOutfit(user.id, outfitData);
 
       if (!newOutfit) {
-        Alert.alert('Erreur', 'Impossible de créer la tenue. Veuillez réessayer.');
+        Alert.alert(t('errors.generic'), t('outfit.loadDetailError'));
         return;
       }
 
@@ -181,11 +183,11 @@ export default function CreateOutfitScreen() {
       );
 
       if (!success) {
-        console.error('Erreur lors de l\'association des vêtements à la tenue');
+        console.error(t('errors.unexpectedError'));
       }
 
       Toast.show({
-        text1: 'Tenue créée avec succès!',
+        text1: t('success.saved'),
         type: 'success'
       });
       setName('');
@@ -198,7 +200,7 @@ export default function CreateOutfitScreen() {
       });
     } catch (error) {
       console.error('Erreur:', error);
-      Alert.alert('Erreur', 'Une erreur s\'est produite. Veuillez réessayer.');
+      Alert.alert(t('errors.generic'), t('errors.tryAgain'));
     } finally {
       setSaving(false);
     }
@@ -206,32 +208,32 @@ export default function CreateOutfitScreen() {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
-      <Header title="Créer une tenue" />
+      <Header title={t('outfits.createOutfit')} />
 
       <ScrollView style={styles.content}>
         <View style={styles.formSection}>
           {/* Section pour l'image de la tenue */}
-          <Text style={[styles.sectionTitle, { marginTop: 20, color: colors.text.main }]}>Image de la tenue</Text>
+          <Text style={[styles.sectionTitle, { marginTop: 20, color: colors.text.main }]}>{t('outfit.image')}</Text>
           <ImagePicker 
             imageUri={outfitImage}
             onImageSelected={(uri) => setOutfitImage(uri)}
             onImageRemoved={() => setOutfitImage(null)}
             uploading={uploadingImage}
           />
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Informations</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('common.information')}</Text>
           <TextInput
             style={[styles.input, { 
               backgroundColor: colors.gray,
               color: colors.text.main
             }]}
-            placeholder="Nom de la tenue*"
+            placeholder={t('outfit.nameRequired')}
             placeholderTextColor={colors.text.light}
             value={name}
             onChangeText={setName}
           />
           
           {/* Description de la tenue */}
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Description</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('outfit.description')}</Text>
           <TextInput
             style={[
               styles.input, 
@@ -245,12 +247,12 @@ export default function CreateOutfitScreen() {
             numberOfLines={4}
             value={description}
             onChangeText={setDescription}
-            placeholder="Décrivez votre tenue (optionnel)"
+            placeholder={t('outfit.descriptionOptional')}
             placeholderTextColor={colors.text.light}
           />
 
           {/* Saison */}
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Saison</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('clothing.season')}</Text>
           <SeasonSelector 
             selectedSeason={season} 
             onSelectSeason={setSeason} 
@@ -258,18 +260,18 @@ export default function CreateOutfitScreen() {
 
           {/* Occasion */}
           <View style={styles.occasionSelector}>
-            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Style</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('explore.style')}</Text>
             <GenericSelector
               options={occasions}
               selectedOption={occasion}
               onOptionSelect={(value) => setOccasion(value as string)}
-              title="Sélectionner un style"
-              placeholder="Choisir un style"
+              title={t('outfit.selectStyle')}
+              placeholder={t('outfit.chooseStyle')}
             />
           </View>
 
           {/* Genre */}
-          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Genre</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('explore.gender')}</Text>
           <GenderSelector 
             selectedGender={gender}
             onGenderChange={setGender}
@@ -279,8 +281,8 @@ export default function CreateOutfitScreen() {
         {/* Vêtements sélectionnés */}
         {clothescreateOutfit.length > 0 && (
           <View style={styles.selectedSection}>
-            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>Vêtements sélectionnés</Text>
-            <Text style={[styles.helperText, { color: colors.text.light }]}>Maintenez et faites glisser pour réorganiser</Text>
+            <Text style={[styles.sectionTitle, { color: colors.text.main }]}>{t('outfit.selectedClothes')}</Text>
+            <Text style={[styles.helperText, { color: colors.text.light }]}>{t('outfit.dragToReorder')}</Text>
             <View style={styles.draggableListContainer}>
               <DraggableClothingList />
             </View>
@@ -294,7 +296,7 @@ export default function CreateOutfitScreen() {
           >
             <Ionicons name="shirt-outline" size={20} color={colors.white} style={{ marginRight: 8 }} />
             <Text style={[styles.wardrobeButtonText, { color: colors.white }]}>
-              {clothescreateOutfit.length > 0 ? "Modifier la sélection" : "Choisir des vêtements"}
+              {clothescreateOutfit.length > 0 ? t('outfit.modifySelection') : t('outfit.chooseClothes')}
             </Text>
           </TouchableOpacity>
         </View>
@@ -307,7 +309,7 @@ export default function CreateOutfitScreen() {
           {saving ? (
             <ActivityIndicator color={colors.text.bright} />
           ) : (
-            <Text style={[styles.saveButtonText, { color: colors.white }]}>Créer la tenue</Text>
+            <Text style={[styles.saveButtonText, { color: colors.white }]}>{t('outfits.createOutfit')}</Text>
           )}
         </TouchableOpacity>
       </ScrollView>

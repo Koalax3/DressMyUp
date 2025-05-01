@@ -121,31 +121,36 @@ export const BRANDS = [
   "Zapa", "Zespa", "Wedo"
 ];
 
-export const COLORS = [
-  { id: 'black', name: 'Noir', value: '#000000' },
-  { id: 'gray', name: 'Gris', value: '#808080' },
-  { id: 'silver', name: 'Argenté', value: '#C0C0C0' },
-  { id: 'white', name: 'Blanc', value: '#FFFFFF' },
-  { id: 'beige', name: 'Beige', value: '#F5F5DC' },
-  { id: 'blue', name: 'Bleu', value: '#0000FF' },
-  { id: 'navy', name: 'Bleu Marine', value: '#35358d' },
-  { id: 'light-blue', name: 'Bleu Clair', value: '#89cff0' },
-  { id: 'red', name: 'Rouge', value: '#FF0000' },
-  { id: 'burgundy', name: 'Bordeaux', value: '#ae2e3d' },
-  { id: 'pink', name: 'Rose', value: '#FFC0CB' },
-  { id: 'violet', name: 'Violet', value: '#800080' },
-  { id: 'lilac', name: 'Lilas', value: '#d297d2' },
-  { id: 'gold', name: 'Doré', value: '#FFD700' },
-  { id: 'yellow', name: 'Jaune', value: '#FFFF00' },
-  { id: 'mustard', name: 'Moutarde', value: '#e5b539' },
-  { id: 'mint', name: 'Mente', value: '#a2ffbc' },
-  { id: 'green', name: 'Vert', value: '#00FF00' },
-  { id: 'forest-green', name: 'Vert Forêt', value: '#2d6c3e' },
-  { id: 'kaki', name: 'Kaki', value: '#94812b' },
-  { id: 'brown', name: 'Marron', value: '#A52A2A' },
-  { id: 'orange', name: 'Orange', value: '#FFA500' },
-  { id: 'abricot', name: 'Abricot', value: '#ffcc98' },
-  { id: 'multicolor', name: 'Multicolore', value: 'linear-gradient' },
+export type ColorType = {
+  id: string;
+  value: string;
+}
+
+export const COLORS: ColorType[] = [
+  { id: 'black', value: '#000000' },
+  { id: 'gray', value: '#808080' },
+  { id: 'silver', value: '#C0C0C0' },
+  { id: 'white', value: '#FFFFFF' },
+  { id: 'beige', value: '#F5F5DC' },
+  { id: 'blue', value: '#0000FF' },
+  { id: 'navy', value: '#35358d' },
+  { id: 'light-blue', value: '#89cff0' },
+  { id: 'red', value: '#FF0000' },
+  { id: 'burgundy', value: '#ae2e3d' },
+  { id: 'pink', value: '#FFC0CB' },
+  { id: 'violet', value: '#800080' },
+  { id: 'lilac', value: '#d297d2' },
+  { id: 'gold', value: '#FFD700' },
+  { id: 'yellow', value: '#FFFF00' },
+  { id: 'mustard', value: '#e5b539' },
+  { id: 'mint', value: '#a2ffbc' },
+  { id: 'green', value: '#00FF00' },
+  { id: 'forest-green', value: '#2d6c3e' },
+  { id: 'kaki', value: '#94812b' },
+  { id: 'brown', value: '#A52A2A' },
+  { id: 'orange', value: '#FFA500' },
+  { id: 'abricot', value: '#ffcc98' },
+  { id: 'multicolor', value: 'linear-gradient' },
 ];
 
 export const fits: { [key: string]: string } = {

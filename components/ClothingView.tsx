@@ -17,7 +17,7 @@ import { useScroll } from '@/contexts/ScrollContext';
 import { Animated, RefreshControl } from 'react-native';
 import SearchBar from './SearchBar';
 import OptionsButton from './OptionsButton';
-
+import { useTranslation } from 'react-i18next';
 export default function ClothingView() {
   const { user } = useAuth();
   const { scrollY } = useScroll();
@@ -36,11 +36,11 @@ export default function ClothingView() {
   const { clothes, refreshing: refreshingClothes, setRefreshing: setRefreshingClothes } = useClothing();
   const [filteredClothes, setFilteredClothes] = React.useState<ClothingItem[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [refreshing, setRefreshing] = React.useState(false);
+  const [refreshing, setRefreshing] = React.useState(true);
   const clothesListRef = React.useRef<Animated.FlatList<ClothingItem>>(null);
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
-
+  const { t } = useTranslation();
   const fetchClothes = async () => {
     if (!user) return;
     const filters = [] as FilterConstraint[];
@@ -111,7 +111,7 @@ export default function ClothingView() {
       if (colorFilterMode === 'sameItem') {
         filtered = filtered.filter(item => {
           const selectedColorIds = filters.colors.map((colorName: string) => {
-            const colorObj = COLORS.find(c => c.name.toLowerCase().includes(colorName.toLowerCase()));
+            const colorObj = COLORS.find(c => c.id.toLowerCase().includes(colorName.toLowerCase()));
             return colorObj ? colorObj.id : null;
           }).filter((id: string | null) => id !== null);
           
@@ -122,7 +122,7 @@ export default function ClothingView() {
       } else {
         filtered = filtered.filter(item => {
           const selectedColorIds = filters.colors.map((colorName: string) => {
-            const colorObj = COLORS.find(c => c.name.toLowerCase().includes(colorName.toLowerCase()));
+            const colorObj = COLORS.find(c => c.id.toLowerCase().includes(colorName.toLowerCase()));
             return colorObj ? colorObj.id : null;
           }).filter((id: string | null) => id !== null);
           
@@ -173,7 +173,7 @@ export default function ClothingView() {
     </TouchableOpacity>
   );
 
-  if (loading && !refreshing) {
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={colors.primary.main} />
@@ -192,12 +192,12 @@ export default function ClothingView() {
 
       <View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterContainer}>
-          <FilterButton title="Tous" value={null} />
-          <FilterButton title="Hauts" value="top" />
-          <FilterButton title="Bas" value="bottom" />
-          <FilterButton title="Chaussures" value="shoes" />
-          <FilterButton title="Accessoires" value="accessory" />
-          <FilterButton title="Ensembles" value="ensemble" />
+          <FilterButton title={t('common.all')} value={null} />
+          <FilterButton title={t('clothingTypes.top')} value="top" />
+          <FilterButton title={t('clothingTypes.bottom')} value="bottom" />
+          <FilterButton title={t('clothingTypes.shoes')} value="shoes" />
+          <FilterButton title={t('clothingTypes.accessory')} value="accessory" />
+          <FilterButton title={t('clothingTypes.ensemble')} value="ensemble" />
           <View style={{ width: 15 }} />
         </ScrollView>
       </View>
@@ -207,13 +207,13 @@ export default function ClothingView() {
           <Ionicons name="shirt-outline" size={80} color={colors.darkGray} />
           <Text style={[styles.emptyText, { color: colors.text.main }]}>
             {searchText || getClothesFilterCount() > 0 
-              ? 'Aucun vêtement ne correspond à votre recherche' 
-              : 'Votre garde-robe est vide'}
+              ? t('common.noClothesFound') 
+              : t('common.emptyWardrobe')}
           </Text>
           <Text style={[styles.emptySubtext, { color: colors.text.light }]}>
             {searchText || getClothesFilterCount() > 0
-              ? 'Essayez avec d\'autres termes ou filtres'
-              : 'Commencez à ajouter vos vêtements en appuyant sur le bouton +'}
+              ? t('common.tryOtherTermsOrFilters')
+              : t('common.startAddingClothes')}
           </Text>
         </View>
       ) : (

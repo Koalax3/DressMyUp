@@ -4,16 +4,17 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { getThemeColors } from "@/constants/Colors";
 import { Ionicons } from "@expo/vector-icons";
 import { TouchableOpacity, View, StyleSheet, TextInput } from "react-native";
-
+import { useTranslation } from "react-i18next";
 export const SearchBar = ({ searchText, setSearchText }: { searchText: string, setSearchText: (text: string) => void }) => {
     const { isDarkMode } = useTheme();
     const colors = getThemeColors(isDarkMode);
+    const { t } = useTranslation();
     return (
         <View style={[styles.searchBar, { backgroundColor: colors.gray }]}>
         <Ionicons name="search" size={20} color={colors.text.light} style={styles.searchIcon} />
         <TextInput
           style={[styles.searchInput, { color: colors.text.main }]}
-          placeholder="Rechercher..."
+          placeholder={t('common.search')}
           value={searchText}
           onChangeText={setSearchText}
           placeholderTextColor={colors.text.light}

@@ -5,10 +5,13 @@ import { router } from "expo-router";
 import { TouchableOpacity, Image, View, Text, StyleSheet } from "react-native";
 import { useTheme } from "@/contexts/ThemeContext";
 import { getThemeColors } from "@/constants/Colors";
+import { useTranslation } from "@/i18n/useTranslation";
 
 export default function ClotheItem({ item }: { item: ClothingItem }) {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
+  
   const tag = (color: string, text: string) => (
     <View style={[styles.tag, { backgroundColor: color }]}>
       <Text style={[styles.tagText, { color: colors.black }]}>{text}</Text>
@@ -26,12 +29,14 @@ export default function ClotheItem({ item }: { item: ClothingItem }) {
       />
       <View style={styles.clothingInfo}>
         <Text style={[styles.clothingName, { color: colors.text.main }]}>{item.name}</Text>
-        <Text style={[styles.clothingBrand, { color: colors.text.light }]}>{item.brand || 'Sans marque'} {item.reference && `- ${item.reference}`}</Text>
+        <Text style={[styles.clothingBrand, { color: colors.text.light }]}>
+          {item.brand || t('common.noBrand')} {item.reference && `- ${item.reference}`}
+        </Text>
         <View style={styles.tagContainer}>
-          {tag(colors.tag.red, types[item.type])}
-          {item.subtype && tag(colors.tag.blue, subtypesByType[item.type][item.subtype]!)}
-          {item.material && tag(colors.tag.green, MATERIALS[item.material])}
-          {item.pattern && tag(colors.tag.purple, PATTERNS[item.pattern as keyof typeof PATTERNS])}
+          {tag(colors.tag.red, t(`clothingTypes.${item.type}`))}
+          {item.subtype && tag(colors.tag.blue, t(`clothingSubtypes.${item.type}.${item.subtype}`))}
+          {item.material && tag(colors.tag.green, t(`clothingMaterials.${item.material}`))}
+          {item.pattern && tag(colors.tag.purple, t(`clothingPatterns.${item.pattern}`))}
         </View>
       </View>
     </TouchableOpacity>
