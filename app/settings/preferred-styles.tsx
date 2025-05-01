@@ -8,8 +8,7 @@ import {
   Dimensions, 
   Alert, 
   ActivityIndicator, 
-  FlatList,
-  ListRenderItemInfo
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,10 +25,8 @@ import Header from '@/components/Header';
 import { useTranslation } from '@/i18n/useTranslation';
 
 const { width } = Dimensions.get('window');
-const cardWidth = (width - 45) / 2; // 30 pour les paddings, 15 pour l'espacement entre les colonnes
-const COLUMN_COUNT = 2;
+const cardWidth = (width - 45) / 2; // 30 pour les paddings externes, 15 pour l'espacement entre les colonnes
 
-// Type pour les styles dans la liste
 type StyleItem = {
   id: string;
   image: any;
@@ -86,9 +83,7 @@ export default function PreferredStylesScreen() {
     }
   };
 
-  const keyExtractor = (item: StyleItem) => item.id;
-
-  const renderItem = ({ item }: ListRenderItemInfo<StyleItem>) => {
+  const renderItem = ({ item }: { item: StyleItem }) => {
     return (
       <TouchableOpacity
         style={[
@@ -132,14 +127,14 @@ export default function PreferredStylesScreen() {
 
       <FlatList
         data={STYLES}
-        initialNumToRender={8}
         renderItem={renderItem}
-        keyExtractor={keyExtractor}
-        numColumns={COLUMN_COUNT}
-        key={"two-column-list"}
+        keyExtractor={item => item.id}
+        numColumns={2}
+        key="two-column-list"
         style={styles.content}
         contentContainerStyle={styles.contentContainer}
         columnWrapperStyle={styles.columnWrapper}
+        initialNumToRender={8}
         maxToRenderPerBatch={10}
         windowSize={10}
       />
@@ -153,13 +148,13 @@ export default function PreferredStylesScreen() {
         onPress={handleSave}
         disabled={isLoading}
       >
-        {isLoading ?
-        <ActivityIndicator size="large" color={colors.white} />
-        : 
-        <Text style={styles.saveButtonText}>
-          {t('common.save')}
-        </Text>
-        }
+        {isLoading ? (
+          <ActivityIndicator size="large" color={colors.white} />
+        ) : (
+          <Text style={styles.saveButtonText}>
+            {t('common.save')}
+          </Text>
+        )}
       </TouchableOpacity>
     </SafeAreaView>
   );
