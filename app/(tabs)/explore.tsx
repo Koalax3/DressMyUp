@@ -297,7 +297,7 @@ export default function ExploreScreen() {
                 filters[category] === option.value && { color: colors.white }
               ]}
             >
-              {t(`${category}.${option.value}`)}
+              {t(`${category}s.${option.value}`)}
             </Text>
           </TouchableOpacity>
         ))}

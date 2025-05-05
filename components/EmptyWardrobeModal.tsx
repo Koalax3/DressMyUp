@@ -2,6 +2,9 @@ import React from 'react';
 import { StyleSheet, View, Text, TouchableOpacity, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
+import { useTranslation } from '@/i18n/useTranslation';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
 
 type EmptyWardrobeModalProps = {
   visible: boolean;
@@ -10,6 +13,10 @@ type EmptyWardrobeModalProps = {
 };
 
 const EmptyWardrobeModal = ({ visible, onClose, closeable = false }: EmptyWardrobeModalProps) => {
+  const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
+
   return (
     <Modal
       visible={visible}
@@ -18,35 +25,41 @@ const EmptyWardrobeModal = ({ visible, onClose, closeable = false }: EmptyWardro
       onRequestClose={onClose}
     >
       <View style={styles.emptyModalOverlay}>
-        <View style={styles.emptyModalContainer}>
+        <View style={[styles.emptyModalContainer, { backgroundColor: colors.background.main }]}>
           <View style={styles.emptyModalHeader}>
-            <Text style={styles.emptyModalTitle}>Votre garde-robe est vide</Text>
+            <Text style={[styles.emptyModalTitle, { color: colors.text.main }]}>
+              {t('wardrobe.emptyWardrobe')}
+            </Text>
             {closeable && <TouchableOpacity onPress={onClose}>
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={colors.text.main} />
             </TouchableOpacity>}
           </View>
           <View style={styles.emptyModalContent}>
-            <Ionicons name="shirt-outline" size={80} color="#F97A5C" />
-            <Text style={styles.emptyModalText}>
-              Pour créer une tenue, vous devez d'abord ajouter des vêtements à votre garde-robe. Soit en ajoutant des vêtements manuellement, soit en ajoutant depuis les tenues de la communauté.
+            <Ionicons name="shirt-outline" size={80} color={colors.primary.main} />
+            <Text style={[styles.emptyModalText, { color: colors.text.light }]}>
+              {t('wardrobe.addFirstItemDescription')}
             </Text>
             <TouchableOpacity 
-              style={styles.emptyModalButton}
+              style={[styles.emptyModalButton, { backgroundColor: colors.primary.main }]}
               onPress={() => {
                 onClose();
                 router.replace('/clothing/add');
               }}
             >
-              <Text style={styles.emptyModalButtonText}>Ajouter un vêtement</Text>
+              <Text style={[styles.emptyModalButtonText, { color: colors.white }]}>
+                {t('clothing.add')}
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.emptyModalButton}
+              style={[styles.emptyModalButton, { backgroundColor: colors.primary.main }]}
               onPress={() => {
                 onClose();
                 router.replace('/explore');
               }}
             >
-              <Text style={styles.emptyModalButtonText}>Explorer les tenues</Text>
+              <Text style={[styles.emptyModalButtonText, { color: colors.white }]}>
+              {t('wardrobe.explore')}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -64,7 +77,6 @@ const styles = StyleSheet.create({
   },
   emptyModalContainer: {
     width: '85%',
-    backgroundColor: '#fff',
     borderRadius: 12,
     padding: 20,
     shadowColor: '#000',
@@ -82,7 +94,6 @@ const styles = StyleSheet.create({
   emptyModalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
   },
   emptyModalContent: {
     alignItems: 'center',
@@ -90,20 +101,17 @@ const styles = StyleSheet.create({
   },
   emptyModalText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
     marginVertical: 20,
     lineHeight: 22,
   },
   emptyModalButton: {
-    backgroundColor: '#F97A5C',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,
     marginTop: 10,
   },
   emptyModalButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
   },

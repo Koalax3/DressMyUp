@@ -3,9 +3,10 @@ import { StyleSheet, View, TouchableOpacity, Text, Image, Alert, ActivityIndicat
 import { useAuth } from '../../contexts/AuthContext';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ColorsTheme } from '@/constants/Colors';
+import { ColorsTheme, getThemeColors } from '@/constants/Colors';
 import TextInput from '@/components/TextInput';
 import { useTranslation } from '@/i18n/useTranslation';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -15,6 +16,8 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const { signUp } = useAuth();
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword || !username) {
@@ -64,8 +67,11 @@ export default function RegisterScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-      <StatusBar style="dark" />
+    <ScrollView 
+      style={[styles.container, { backgroundColor: colors.background.main }]} 
+      contentContainerStyle={styles.contentContainer}
+    >
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
       
       <View style={styles.logoContainer}>
         <Image 
@@ -73,8 +79,8 @@ export default function RegisterScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>DressMatch</Text>
-        <Text style={styles.subtitle}>{t('auth.createAccount')}</Text>
+        <Text style={[styles.title, { color: colors.text.main }]}>DressMatch</Text>
+        <Text style={[styles.subtitle, { color: colors.text.bright }]}>{t('auth.createAccount')}</Text>
       </View>
 
       <View style={styles.formContainer}>
@@ -83,6 +89,8 @@ export default function RegisterScreen() {
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
+          style={[styles.input, { backgroundColor: colors.gray, color: colors.text.main }]}
+          placeholderTextColor={colors.text.light}
         />
         
         <TextInput
@@ -91,6 +99,8 @@ export default function RegisterScreen() {
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
+          style={[styles.input, { backgroundColor: colors.gray, color: colors.text.main }]}
+          placeholderTextColor={colors.text.light}
         />
         
         <TextInput
@@ -98,6 +108,8 @@ export default function RegisterScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
+          style={[styles.input, { backgroundColor: colors.gray, color: colors.text.main }]}
+          placeholderTextColor={colors.text.light}
         />
         
         <TextInput
@@ -105,24 +117,26 @@ export default function RegisterScreen() {
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
+          style={[styles.input, { backgroundColor: colors.gray, color: colors.text.main }]}
+          placeholderTextColor={colors.text.light}
         />
 
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.primary.main }]}
           onPress={handleRegister}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>{t('auth.register')}</Text>
+            <Text style={[styles.buttonText, { color: colors.white }]}>{t('auth.register')}</Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>{t('auth.alreadyHaveAccount')}</Text>
+          <Text style={[styles.footerText, { color: colors.text.bright }]}>{t('auth.alreadyHaveAccount')}</Text>
           <TouchableOpacity onPress={() => router.push('/auth/login')}>
-            <Text style={styles.link}>{t('auth.login')}</Text>
+            <Text style={[styles.link, { color: colors.primary.main }]}>{t('auth.login')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -133,7 +147,6 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ColorsTheme.background.main,
   },
   contentContainer: {
     padding: 20,
@@ -153,25 +166,27 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: ColorsTheme.text.main,
   },
   subtitle: {
     fontSize: 16,
-    color: ColorsTheme.text.bright,
     marginTop: 5,
   },
   formContainer: {
     width: '100%',
   },
+  input: {
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    fontSize: 16,
+  },
   button: {
-    backgroundColor: ColorsTheme.primary.main,
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
     marginTop: 10,
   },
   buttonText: {
-    color: ColorsTheme.background.main,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -181,11 +196,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   footerText: {
-    color: ColorsTheme.text.bright,
     marginRight: 5,
   },
   link: {
-    color: ColorsTheme.primary.main,
     fontWeight: 'bold',
   },
 }); 

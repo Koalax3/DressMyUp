@@ -16,6 +16,7 @@ export default function Header({ title, children, back = false }: { title: strin
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
+      minHeight: 75,
     },
     title: {
       position: back ? 'absolute' : 'relative',

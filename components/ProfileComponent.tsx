@@ -512,8 +512,8 @@ const styles = StyleSheet.create({
   },
   editAvatarIcon: {
     position: 'absolute',
-    bottom: 10,
     right: 0,
+    top: 55,
     backgroundColor: '#F97A5C',
     width: 25,
     height: 25,

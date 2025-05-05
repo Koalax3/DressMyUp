@@ -4,8 +4,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import * as FollowService from '@/services/followService';
-import { ColorsTheme } from '@/constants/Colors';
+import { getThemeColors } from '@/constants/Colors';
 import { DEFAULT_USER_AVATAR } from '@/constants/Users';
+import { useTheme } from '@/contexts/ThemeContext';
+import { useTranslation } from '@/i18n/useTranslation';
 
 type UserListItemProps = {
   user: {
@@ -28,6 +30,9 @@ const UserListItem = ({
   const { user: currentUser } = useAuth();
   const [following, setFollowing] = useState(isFollowing);
   const [loading, setLoading] = useState(false);
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
 
   const handleUserPress = () => {
     if (user.id === currentUser?.id) {
@@ -60,26 +65,42 @@ const UserListItem = ({
   const isCurrentUser = user.id === currentUser?.id;
 
   return (
-    <TouchableOpacity style={styles.container} onPress={handleUserPress}>
+    <TouchableOpacity 
+      style={[
+        styles.container, 
+        {
+          borderBottomColor: isDarkMode ? colors.background.dark : '#f0f0f0',
+          backgroundColor: colors.background.main
+        }
+      ]} 
+      onPress={handleUserPress}
+    >
       <Image 
         source={{ uri: user.avatar_url || DEFAULT_USER_AVATAR }} 
         style={styles.avatar} 
       />
       <View style={styles.userInfo}>
-        <Text style={styles.username}>{user.username}</Text>
-        {user.bio && <Text style={styles.bio} numberOfLines={1}>{user.bio}</Text>}
+        <Text style={[styles.username, { color: colors.text.main }]}>{user.username}</Text>
+        {user.bio && <Text style={[styles.bio, { color: colors.text.light }]} numberOfLines={1}>{user.bio}</Text>}
       </View>
       {showFollowButton && !isCurrentUser && (
         <TouchableOpacity 
-          style={[styles.followButton, following && styles.followingButton]} 
+          style={[
+            styles.followButton, 
+            { backgroundColor: following ? 'transparent' : colors.primary.main },
+            following && { borderColor: colors.primary.main, borderWidth: 1 }
+          ]} 
           onPress={handleFollowToggle}
           disabled={loading}
         >
           {loading ? (
-            <Ionicons name="hourglass-outline" size={16} color={following ? "#666" : "#FFF"} />
+            <Ionicons name="hourglass-outline" size={16} color={following ? colors.text.light : colors.white} />
           ) : (
-            <Text style={[styles.followButtonText, following && styles.followingButtonText]}>
-              {following ? 'Abonné' : 'Suivre'}
+            <Text style={[
+              styles.followButtonText, 
+              { color: following ? colors.primary.main : colors.white }
+            ]}>
+              {following ? t('profile.following') : t('profile.follow')}
             </Text>
           )}
         </TouchableOpacity>
@@ -94,7 +115,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   avatar: {
     width: 50,
@@ -108,15 +128,12 @@ const styles = StyleSheet.create({
   username: {
     fontWeight: 'bold',
     fontSize: 16,
-    color: '#333',
   },
   bio: {
     fontSize: 14,
-    color: '#666',
     marginTop: 2,
   },
   followButton: {
-    backgroundColor: '#F97A5C',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
@@ -124,19 +141,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     minWidth: 80,
   },
-  followingButton: {
-    backgroundColor: ColorsTheme.background.main,
-    borderWidth: 1,
-    borderColor: ColorsTheme.primary.main,
-  },
   followButtonText: {
-    color: '#fff',
     fontWeight: 'bold',
     fontSize: 14,
-  },
-  followingButtonText: {
-    color: ColorsTheme.primary.main,
-  },
+  }
 });
 
 export default UserListItem; 

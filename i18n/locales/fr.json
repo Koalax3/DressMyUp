@@ -24,11 +24,16 @@
     "success": "Succès",
     "information": "Informations",
     "noClothesFound": "Aucun vêtement ne correspond à votre recherche",
+    "emptyWardrobe": "Votre garde-robe est vide",
     "startAddingClothes": "Commencez à ajouter vos vêtements en appuyant sur le bouton +",
     "tryOtherTermsOrFilters": "Essayez avec d'autres termes ou filtres",
     "styles": "Styles",
     "seasons": "Saisons",
-    "genders": "Genres"
+    "genders": "Genres",
+    "wardrobe": "Ma Garde-robe",
+    "create": "Créer",
+    "add": "Ajouter",
+    "dressMatch": "DressMatch"
   },
   "auth": {
     "login": "Connexion",
@@ -59,7 +64,9 @@
     "deleteClothing": "Supprimer le vêtement",
     "emptyWardrobe": "Votre garde-robe est vide",
     "addFirstItem": "Ajoutez votre premier vêtement",
-    "loadError": "Impossible de charger vos vêtements"
+    "addFirstItemDescription": "Pour créer une tenue, vous devez d'abord ajouter des vêtements à votre garde-robe. Soit en ajoutant des vêtements manuellement, soit en ajoutant depuis les tenues de la communauté.",
+    "loadError": "Impossible de charger vos vêtements",
+    "explore": "Découvrir des tenues"
   },
   "clothing": {
     "type": "Type de vêtement",
@@ -113,7 +120,13 @@
     "modifyButton": "Modifier",
     "createOutfitButton": "Créer une tenue",
     "referenceLabel": "Référence",
-    "referencePlaceholder": "Ex: 1234567890"
+    "referencePlaceholder": "Ex: 1234567890",
+    "existingItemFound": "Vêtement existant trouvé",
+    "useExistingItemInfo": "Voulez-vous utiliser ses informations ?",
+    "willReplaceInfo": "Cela remplacera les informations que vous avez renseignées.",
+    "accept": "Accepter",
+    "reject": "Refuser",
+    "explore": "Explorer les tenues"
   },
   "explore": {
     "allStyles": "Tous les styles",
@@ -125,7 +138,8 @@
     "favorites": "Favoris",
     "showMoreOutfits": "Afficher plus de tenues",
     "noOutfitsFound": "Aucune tenue trouvée",
-    "searchStyle": "Rechercher un style..."
+    "searchStyle": "Rechercher un style...",
+    "title": "Explorer"
   },
   "outfit": {
     "deleteOutfit": "Supprimer la tenue",
@@ -233,7 +247,9 @@
     "bio": "Biographie",
     "bioPlaceholder": "Parlez-nous de vous...",
     "usernameRequired": "Le nom d'utilisateur ne peut pas être vide",
-    "userNotFound": "Utilisateur non trouvé"
+    "userNotFound": "Utilisateur non trouvé",
+    "noFollowers": "Aucun fan pour le moment",
+    "noFollowing": "Aucun abonnement pour le moment"
   },
   "calendar": {
     "title": "Calendrier",

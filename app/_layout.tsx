@@ -16,7 +16,7 @@ import toastConfig from '../components/toastConfig';
 import { ThemeProvider as CustomThemeProvider } from '@/contexts/ThemeContext';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import '@/i18n/i18n';
-import { ColorsTheme } from '@/constants/Colors';
+import { ColorsTheme, DarkColorsTheme } from '@/constants/Colors';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -50,7 +50,7 @@ export default function RootLayout() {
 
   if (!loaded) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: DarkColorsTheme.background.main }}>
         <ActivityIndicator size="large" color={ColorsTheme.primary.main} />
       </View>
     );

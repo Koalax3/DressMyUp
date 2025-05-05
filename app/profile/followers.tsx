@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import * as FollowService from '@/services/followService';
 import UserListItem from '@/components/UserListItem';
+import { useTheme } from '@/contexts/ThemeContext';
+import { getThemeColors } from '@/constants/Colors';
+import { useTranslation } from '@/i18n/useTranslation';
 
 // Définir un type simplifié pour l'utilisateur
 type UserProfile = {
@@ -21,6 +24,9 @@ export default function FollowersScreen() {
   const { user } = useAuth();
   const params = useLocalSearchParams();
   const userId = (params.userId as string) || user?.id || '';
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
+  const { t } = useTranslation();
   
   const [followers, setFollowers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -90,22 +96,22 @@ export default function FollowersScreen() {
   );
   
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
+      <View style={[styles.header, { borderBottomColor: isDarkMode ? colors.background.dark : '#eee' }]}>
         <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={colors.text.main} />
         </TouchableOpacity>
-        <Text style={styles.title}>Fans</Text>
+        <Text style={[styles.title, { color: colors.text.main }]}>{t('profile.fans')}</Text>
         <View style={{ width: 24 }} />
       </View>
       
       {loading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#F97A5C" />
+          <ActivityIndicator size="large" color={colors.primary.main} />
         </View>
       ) : followers.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>Aucun fan pour le moment</Text>
+          <Text style={[styles.emptyText, { color: colors.text.light }]}>{t('profile.noFollowers')}</Text>
         </View>
       ) : (
         <FlatList
@@ -122,7 +128,6 @@ export default function FollowersScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -131,7 +136,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
   },
   title: {
     fontSize: 18,
@@ -150,7 +154,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#666',
     textAlign: 'center',
   },
 }); 

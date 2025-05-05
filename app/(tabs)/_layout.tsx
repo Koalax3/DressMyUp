@@ -53,7 +53,7 @@ export default function TabLayout() {
   // Afficher un indicateur de chargement pendant le chargement
   if (loading || !rootNavigationState?.key) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background.main }}>
         <ActivityIndicator size="large" color={ColorsTheme.primary.main} />
       </View>
     );

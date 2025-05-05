@@ -8,7 +8,7 @@ export const fetchFollowers = async (userId: string) => {
       .select(`
         id,
         user_id,
-        users!follows<w_user_id_fkey (
+        users:user_id (
           id,
           email,
           username,
@@ -25,7 +25,7 @@ export const fetchFollowers = async (userId: string) => {
     }
 
     // Transformer les données pour n'avoir que les utilisateurs
-    return data?.map(item => (item as any).users) || [];
+    return data?.map(item => item.users) || [];
   } catch (error) {
     console.error('Erreur dans fetchFollowers:', error);
     throw error;
@@ -40,7 +40,7 @@ export const fetchFollowing = async (userId: string) => {
       .select(`
         id,
         followed_id,
-        users!follows_followed_id_fkey (
+        users:followed_id (
           id,
           email,
           username,
@@ -72,7 +72,7 @@ export const checkIfFollowing = async (userId: string, followedId: string) => {
       .select('*')
       .eq('user_id', userId)
       .eq('followed_id', followedId)
-      .single();
+      .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {
       throw new Error(`Erreur lors de la vérification de l'abonnement: ${error.message}`);

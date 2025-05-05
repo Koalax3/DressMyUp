@@ -24,11 +24,16 @@
     "success": "Success",
     "information": "Information",
     "noClothesFound": "No clothes found",
+    "emptyWardrobe": "Your wardrobe is empty",
     "startAddingClothes": "Start adding your clothes by clicking the + button",
     "tryOtherTermsOrFilters": "Try other terms or filters",
     "styles": "Styles",
     "seasons": "Seasons",
-    "genders": "Genders"
+    "genders": "Genders",
+    "wardrobe": "My wardrobe",
+    "add": "Add",
+    "create": "Create",
+    "dressMatch": "DressMatch"
   },
   "auth": {
     "login": "Login",
@@ -59,7 +64,9 @@
     "deleteClothing": "Delete clothing",
     "emptyWardrobe": "Your wardrobe is empty",
     "addFirstItem": "Add your first clothing item",
-    "loadError": "Unable to load your clothes"
+    "addFirstItemDescription": "To create an outfit, you first need to add clothes to your wardrobe. Either by adding clothes manually or by adding from community outfits.",
+    "loadError": "Unable to load your clothes",
+    "explore": "Discover outfits"
   },
   "clothing": {
     "type": "Clothing type",
@@ -113,7 +120,13 @@
     "modifyButton": "Modify",
     "createOutfitButton": "Create outfit",
     "referenceLabel": "Reference",
-    "referencePlaceholder": "Ex: 1234567890"
+    "referencePlaceholder": "Ex: 1234567890",
+    "existingItemFound": "Existing clothing item found",
+    "useExistingItemInfo": "Do you want to use its information?",
+    "willReplaceInfo": "This will replace the information you have entered.",
+    "accept": "Accept",
+    "reject": "Reject",
+    "explore": "Explore outfits"
   },
   "explore": {
     "allStyles": "All styles",
@@ -125,7 +138,8 @@
     "favorites": "Favorites",
     "showMoreOutfits": "Show more outfits",
     "noOutfitsFound": "No outfits found",
-    "searchStyle": "Search for a style..."
+    "searchStyle": "Search for a style...",
+    "title": "Explore"
   },
   "outfit": {
     "deleteOutfit": "Delete outfit",
@@ -233,7 +247,9 @@
     "bio": "Biography",
     "bioPlaceholder": "Tell us about yourself...",
     "usernameRequired": "Username cannot be empty",
-    "userNotFound": "User not found"
+    "userNotFound": "User not found",
+    "noFollowers": "No fans yet",
+    "noFollowing": "No following yet"
   },
   "calendar": {
     "title": "Calendar",
@@ -504,5 +520,6 @@
     "orange": "Orange",
     "abricot": "Apricot",
     "multicolor": "Multicolor"
-  }
+  },
+  "DressMatch": "DressMatch"
 }

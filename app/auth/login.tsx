@@ -3,9 +3,10 @@ import { StyleSheet, View, TouchableOpacity, Text, Image, Alert, ActivityIndicat
 import { useAuth } from '../../contexts/AuthContext';
 import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ColorsTheme } from '@/constants/Colors';
+import { ColorsTheme, getThemeColors } from '@/constants/Colors';
 import TextInput from '@/components/TextInput';
 import { useTranslation } from '@/i18n/useTranslation';
+import { useTheme } from '@/contexts/ThemeContext';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -13,6 +14,8 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const { signIn } = useAuth();
   const { t } = useTranslation();
+  const { isDarkMode } = useTheme();
+  const colors = getThemeColors(isDarkMode);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -32,8 +35,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="dark" />
+    <View style={[styles.container, { backgroundColor: colors.background.main }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
       
       <View style={styles.logoContainer}>
         <Image 
@@ -41,8 +44,8 @@ export default function LoginScreen() {
           style={styles.logo}
           resizeMode="contain"
         />
-        <Text style={styles.title}>DressMatch</Text>
-        <Text style={styles.subtitle}>{t('auth.virtualWardrobe')}</Text>
+        <Text style={[styles.title, { color: colors.text.main }]}>DressMatch</Text>
+        <Text style={[styles.subtitle, { color: colors.text.bright }]}>{t('auth.virtualWardrobe')}</Text>
       </View>
 
       <View style={styles.formContainer}>
@@ -52,7 +55,8 @@ export default function LoginScreen() {
           onChangeText={setEmail}
           autoCapitalize="none"
           keyboardType="email-address"
-          placeholderTextColor={ColorsTheme.text.main}
+          placeholderTextColor={colors.text.light}
+          style={[styles.input, { backgroundColor: colors.gray, color: colors.text.main }]}
         />
         
         <TextInput
@@ -60,25 +64,26 @@ export default function LoginScreen() {
           value={password}
           onChangeText={setPassword}
           secureTextEntry
-          placeholderTextColor={ColorsTheme.text.main}
+          placeholderTextColor={colors.text.light}
+          style={[styles.input, { backgroundColor: colors.gray, color: colors.text.main }]}
         />
 
         <TouchableOpacity 
-          style={styles.button}
+          style={[styles.button, { backgroundColor: colors.primary.main }]}
           onPress={handleLogin}
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color={ColorsTheme.background.main} />
+            <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>{t('auth.login')}</Text>
+            <Text style={[styles.buttonText, { color: colors.white }]}>{t('auth.login')}</Text>
           )}
         </TouchableOpacity>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>{t('auth.noAccount')}</Text>
+          <Text style={[styles.footerText, { color: colors.text.bright }]}>{t('auth.noAccount')}</Text>
           <TouchableOpacity onPress={() => router.push('/auth/register')}>
-            <Text style={styles.link}>{t('auth.register')}</Text>
+            <Text style={[styles.link, { color: colors.primary.main }]}>{t('auth.register')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -89,7 +94,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: ColorsTheme.background.main,
     padding: 20,
   },
   logoContainer: {
@@ -106,33 +110,27 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: ColorsTheme.text.main,
   },
   subtitle: {
     fontSize: 16,
-    color: ColorsTheme.text.bright,
     marginTop: 5,
   },
   formContainer: {
     width: '100%',
   },
   input: {
-    backgroundColor: ColorsTheme.gray,
-    color: ColorsTheme.text.main,
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
     fontSize: 16,
   },
   button: {
-    backgroundColor: ColorsTheme.primary.main,
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
     marginTop: 10,
   },
   buttonText: {
-    color: ColorsTheme.background.main,
     fontSize: 16,
     fontWeight: 'bold',
   },
@@ -142,11 +140,9 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   footerText: {
-    color: ColorsTheme.text.bright,
     marginRight: 5,
   },
   link: {
-    color: ColorsTheme.primary.main,
     fontWeight: 'bold',
   },
 }); 
