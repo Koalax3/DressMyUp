@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { StyleSheet, View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, ScrollView } from 'react-native';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, ScrollView, Image } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useScroll } from '@/contexts/ScrollContext';
 import { ClothingItem, Outfit, User } from '@/types';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import OutfitPreview from '@/components/OutfitPreview';
-import { fetchOutfitsForExplore, fetchLikedOutfitIds } from '@/services/outfitService';
+import { fetchOutfitsForExplore, fetchLikedOutfitIds, fetchOutfitsForDressMatch, getIdOutfitFromClothe } from '@/services/outfitService';
 import { fetchUserClothes } from '@/services/clothingService';
 import { Ionicons } from '@expo/vector-icons';
 import { genders, seasons, STYLES } from '@/constants/Outfits';
@@ -17,17 +17,18 @@ import { getThemeColors } from '@/constants/Colors';
 import Header from '@/components/Header';
 import GenericSelector from '@/components/selector/GenericSelector';
 import { useTranslation } from '@/i18n/useTranslation';
-
+import DressMatchIcon from '@/assets/images/dress-match.svg';
+import { useClothing } from '@/contexts/ClothingContext';
 // Type simplifié pour l'affichage des tenues
 type OutfitWithUser = Outfit & { user: User } & { clothes: ClothingItem[] };
 
 // Types de filtres disponibles
 type FilterCategory = 'season' | 'occasion' | 'gender';
-type FilterValue = string | null;
 
 export default function ExploreScreen() {
   const { user } = useAuth();
   const { t } = useTranslation();
+  const { clothes } = useClothing();
   const [outfits, setOutfits] = useState<OutfitWithUser[]>([]);
   const [filteredOutfits, setFilteredOutfits] = useState<OutfitWithUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +37,7 @@ export default function ExploreScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showDressMatch, setShowDressMatch] = useState(false);
   const ITEMS_PER_PAGE = 10;
   const [clothesUser, setClothesUser] = useState<ClothingItem[]>([]);
   const [activeFilterCategory, setActiveFilterCategory] = useState<FilterCategory | null>(null);
@@ -44,9 +46,8 @@ export default function ExploreScreen() {
     occasion: 'fav',
     gender: 'all'
   });
-  const [modalVisible, setModalVisible] = useState(false);
   const setStyleModalVisible = useRef<((visible: boolean) => void) | null>(null);
-  
+  const [currentFilters, setCurrentFilters] = useState<string>('');
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
 
@@ -114,6 +115,20 @@ export default function ExploreScreen() {
       filterOptions.push(['eq', 'gender', filters.gender]);
     }
 
+    if (showDressMatch) {
+      if (!user) return;
+      const {data, error} = await getIdOutfitFromClothe(clothes);
+      if (data) {
+        const outfitsIds = data.map(clothe => {
+          if(clothe.clothes_outfits.length > 0) {
+            return clothe.clothes_outfits[0].outfit_id;
+          }
+          return null;
+        }).filter(id => id !== null);
+        filterOptions.push(['in', 'id', outfitsIds]);
+      }
+    }
+
     if (showFavorites) {
       const ids = await likedOutfitIds;
       if (ids.length === 0) {
@@ -123,7 +138,7 @@ export default function ExploreScreen() {
     }
 
     return filterOptions;
-  }, [filters, showFavorites, likedOutfitIds]);
+  }, [filters, showFavorites, likedOutfitIds, showDressMatch]);
 
   // Fonction pour charger les tenues
   const loadOutfits = useCallback(async (pageNumber = 1, shouldAppend = false) => {
@@ -145,7 +160,10 @@ export default function ExploreScreen() {
         setHasMore(false);
         return;
       }
-
+      if (currentFilters == JSON.stringify(filterOptions)) {
+        return;
+      }
+      setCurrentFilters(JSON.stringify(filterOptions));
       const response = await fetchOutfitsForExplore(user.id, pageNumber, ITEMS_PER_PAGE, filterOptions);
       
       if (!response) {
@@ -199,7 +217,10 @@ export default function ExploreScreen() {
             setHasMore(false);
             return;
           }
-
+          if (currentFilters == JSON.stringify(filterOptions)) {
+            return;
+          }
+          setCurrentFilters(JSON.stringify(filterOptions));
           const response = await fetchOutfitsForExplore(user.id, 1, ITEMS_PER_PAGE, filterOptions);
           
           if (!response) {
@@ -317,6 +338,66 @@ export default function ExploreScreen() {
 
       <View style={{...styles.filtersContainer}}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterCategoriesContainer}>
+        <TouchableOpacity
+            style={[
+              styles.filterCategory, 
+              { 
+                backgroundColor: showFavorites 
+                  ? colors.primary.main 
+                  : colors.gray
+              }
+            ]}
+            onPress={() => setShowFavorites(!showFavorites)}
+          >
+            <Ionicons 
+              name={showFavorites ? "heart" : "heart-outline"} 
+              size={16} 
+              color={showFavorites 
+                ? colors.white 
+                : colors.text.main
+              } 
+            />
+            <Text 
+              style={[
+                styles.filterCategoryText, 
+                { 
+                  color: showFavorites 
+                    ? colors.white 
+                    : colors.text.main 
+                }
+              ]}
+            >
+              {t('explore.favorites')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.filterCategory, 
+              { 
+                backgroundColor: showDressMatch 
+                  ? colors.primary.main 
+                  : colors.gray
+              }
+            ]}
+            onPress={() => setShowDressMatch(!showDressMatch)}
+          >
+            <DressMatchIcon
+              width={16}
+              height={16}
+              fill={isDarkMode || showDressMatch ? colors.white : colors.text.main} />
+            <Text 
+              style={[
+                styles.filterCategoryText, 
+                { 
+                  color: showDressMatch 
+                    ? colors.white 
+                    : colors.text.main,
+                }
+              ]}
+            >
+              {t('common.dressMatch')}
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={[
               styles.filterCategory, 
@@ -427,39 +508,6 @@ export default function ExploreScreen() {
               ]}
             >
               {t('explore.gender')}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.filterCategory, 
-              { 
-                backgroundColor: showFavorites 
-                  ? colors.primary.main 
-                  : colors.gray
-              }
-            ]}
-            onPress={() => setShowFavorites(!showFavorites)}
-          >
-            <Ionicons 
-              name={showFavorites ? "heart" : "heart-outline"} 
-              size={16} 
-              color={showFavorites 
-                ? colors.white 
-                : colors.text.main
-              } 
-            />
-            <Text 
-              style={[
-                styles.filterCategoryText, 
-                { 
-                  color: showFavorites 
-                    ? colors.white 
-                    : colors.text.main 
-                }
-              ]}
-            >
-              {t('explore.favorites')}
             </Text>
           </TouchableOpacity>
         </ScrollView>

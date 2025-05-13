@@ -86,7 +86,41 @@ export const fetchOutfitsForExplore = async (userId: string, page: number = 1, i
       query = applyFilter(query, operator, field, value);
     }
   }
+  return await query;
+};
 
+export const getIdOutfitFromClothe = async (clothes: ClothingItem[]) => {
+  let query = supabase
+    .from('clothes')
+    .select(`
+      *,
+      clothes_outfits(outfit_id, outfit:outfit_id(*))
+      `)
+  const orConditions = clothes.map(clothe => {
+    const andConditions = [];
+    
+    if (clothe.color) {
+      if (clothe.color.includes(', ')) {
+        clothe.color.split(', ').forEach(color => {
+          andConditions.push(`color.like.%25${color}%25`);
+        });
+      } else {
+        andConditions.push(`color.eq.${clothe.color}`);
+      }
+    }
+    if (clothe.brand) andConditions.push(`brand.eq.${clothe.brand}`);
+    if (clothe.subtype) andConditions.push(`subtype.eq.${clothe.subtype}`);
+    if (clothe.material && clothe.pattern){
+      andConditions.push(`or(material.eq.${clothe.material},pattern.eq.${clothe.pattern})`);
+    } else {
+      if (clothe.material) andConditions.push(`material.eq.${clothe.material}`);
+      if (clothe.pattern) andConditions.push(`pattern.eq.${clothe.pattern}`);
+    }
+    
+    // Retourne une condition "AND" pour ce vêtement
+    return `and(${andConditions.join(',')})`;
+  }).filter(condition => condition !== 'and()');
+  query = query.or(orConditions.join(',').replaceAll(' ', '%20'));
   return await query;
 };
 

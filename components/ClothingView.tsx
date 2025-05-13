@@ -278,6 +278,7 @@ const styles = StyleSheet.create({
   },
   filterButtonTextActive: {
     fontWeight: 'bold',
+    color: ColorsTheme.white,
   },
   loadingContainer: {
     flex: 1,

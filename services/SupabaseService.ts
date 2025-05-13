@@ -1,6 +1,6 @@
 import { PostgrestFilterBuilder } from '@supabase/postgrest-js';
 import { supabase } from '@/constants/Supabase';
-export type FilterOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'is' | 'in' | 'order';
+export type FilterOperator = 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'like' | 'ilike' | 'is' | 'in' | 'order' | 'or';
 export type FilterConstraint = [operator: FilterOperator, field: string, value: unknown];
 export type TableName = 'clothes' | 'outfits' | 'users' | 'likes' | 'comments';
 export function fetch(
@@ -37,6 +37,7 @@ export function applyFilter<T>(
     case 'is': return query.is(field, value);
     case 'in': return query.in(field, value as string[]);
     case 'order': return query.order(field, { ascending: value as boolean });
+    case 'or' : return query.or(value as string);
     default: throw new Error(`Opérateur non supporté: ${operator}`);
   }
 }

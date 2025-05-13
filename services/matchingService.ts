@@ -1,6 +1,9 @@
 import { ClothingItem, Outfit } from '@/types';
 
 export const colorMatch = (item: ClothingItem, currentItem: ClothingItem): boolean => {
+  if (!item || !currentItem) {
+    return false;
+  }
   const itemColors = item.color.split(',').map(c => c.trim());
   const currentColors = currentItem.color.split(',').map(c => c.trim());
 
@@ -45,7 +48,6 @@ export const calculateMatchingPercentage = (
   const dressMatches = [];
   const perfectMatches = [];
   const similarMatches = [];
-
   outfit.clothes.forEach(item => {
     if (!item) return;
 

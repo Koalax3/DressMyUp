@@ -7,6 +7,7 @@ import { ColorsTheme, getThemeColors } from '@/constants/Colors';
 import TextInput from '@/components/TextInput';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function RegisterScreen() {
   const [email, setEmail] = useState('');
@@ -18,7 +19,7 @@ export default function RegisterScreen() {
   const { t } = useTranslation();
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
-
+  const i18n = useLanguage();
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword || !username) {
       Alert.alert(t('errors.generic'), t('errors.requiredField'));
@@ -37,7 +38,7 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      const { error } = await signUp(email, password, username);
+      const { error } = await signUp(email, password, username, {language: i18n.language});
       
       if (error) {
         console.error('Erreur d\'inscription détaillée:', error);

@@ -20,7 +20,8 @@ export type AuthResponse = {
 export const signUp = async (
   email: string,
   password: string,
-  username: string
+  username: string,
+  data?: Object
 ): Promise<AuthResponse> => {
   try {
     // Vérifier si l'email est déjà utilisé
@@ -43,6 +44,9 @@ export const signUp = async (
     const { data: authData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
+      options: {
+        data: data,
+      },
     });
 
     if (signUpError || !authData.user) {
