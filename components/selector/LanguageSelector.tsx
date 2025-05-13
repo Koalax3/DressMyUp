@@ -16,7 +16,13 @@ type Language = {
 
 const LANGUAGES: Language[] = [
   { code: 'fr', name: 'Français', countryCode: 'fr' },
-  { code: 'en', name: 'English', countryCode: 'gb' }
+  { code: 'en', name: 'English', countryCode: 'gb' },
+  { code: 'de', name: 'Deutsch', countryCode: 'de' },
+  { code: 'es', name: 'España', countryCode: 'es' },
+  { code: 'pt', name: 'Português', countryCode: 'pt' },
+  { code: 'it', name: 'Italiano', countryCode: 'it' }
+
+  
 ];
 
 const LanguageSelector = () => {

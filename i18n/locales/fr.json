@@ -138,6 +138,7 @@
     "favorites": "Favoris",
     "showMoreOutfits": "Afficher plus de tenues",
     "noOutfitsFound": "Aucune tenue trouvée",
+    "noDressMatchOutfitsFound": "Aucune tenue ne match avec votre garde-robe",
     "searchStyle": "Rechercher un style...",
     "title": "Explorer"
   },

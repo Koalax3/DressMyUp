@@ -19,6 +19,7 @@ import GenericSelector from '@/components/selector/GenericSelector';
 import { useTranslation } from '@/i18n/useTranslation';
 import DressMatchIcon from '@/assets/images/dress-match.svg';
 import { useClothing } from '@/contexts/ClothingContext';
+import Toast from 'react-native-toast-message';
 // Type simplifié pour l'affichage des tenues
 type OutfitWithUser = Outfit & { user: User } & { clothes: ClothingItem[] };
 
@@ -122,6 +123,11 @@ export default function ExploreScreen() {
         const outfitsIds = data.map(clothe => {
           if(clothe.clothes_outfits.length > 0) {
             return clothe.clothes_outfits[0].outfit_id;
+          } else {
+            Toast.show({
+              type: 'error',
+              text1: t('explore.noDressMatchOutfitsFound')
+            });
           }
           return null;
         }).filter(id => id !== null);

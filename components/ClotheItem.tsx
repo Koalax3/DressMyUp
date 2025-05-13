@@ -77,12 +77,14 @@ const styles = StyleSheet.create({
       },
       tagContainer: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
+        columnGap: 6,
+        rowGap: 4
       },
       tag: {
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 4,
-        marginRight: 6,
       },
       tagText: {
         fontSize: 12,

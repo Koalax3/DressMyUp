@@ -61,9 +61,10 @@ const SeasonSelector: React.FC<SeasonSelectorProps> = ({
 const styles = StyleSheet.create({
   seasonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     flexWrap: 'wrap',
     marginBottom: 15,
+    columnGap: 10,
+    rowGap: 8
   },
   seasonButton: {
     flexDirection: 'row',
@@ -71,7 +72,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
-    marginBottom: 8,
   },
   seasonButtonActive: {
     // Style for active button handled in component with backgroundColor

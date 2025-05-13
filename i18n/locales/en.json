@@ -138,6 +138,7 @@
     "favorites": "Favorites",
     "showMoreOutfits": "Show more outfits",
     "noOutfitsFound": "No outfits found",
+    "noDressMatchOutfitsFound": "No outfits match with your dress",
     "searchStyle": "Search for a style...",
     "title": "Explore"
   },

@@ -6,6 +6,10 @@ import { NativeModules, Platform } from 'react-native';
 // Importation des ressources de traduction
 import fr from './locales/fr.json';
 import en from './locales/en.json';
+import de from './locales/de.json';
+import es from './locales/es.json';
+import pt from './locales/pt.json';
+import it from './locales/it.json';
 
 // Ressources de traduction
 const resources = {
@@ -14,6 +18,18 @@ const resources = {
   },
   en: {
     translation: en
+  },
+  de: {
+    translation: de
+  },
+  es: {
+    translation: es
+  },
+  pt: {
+    translation: pt
+  },
+  it: {
+    translation: it
   }
 };
 
@@ -37,7 +53,7 @@ const detectUserLanguage = (): string => {
     const languageCode = deviceLanguage ? deviceLanguage.substring(0, 2) : null;
     
     // Vérifier si la langue est prise en charge
-    if (languageCode && (languageCode === 'fr' || languageCode === 'en')) {
+    if (languageCode && Object.keys(resources).includes(languageCode)) {
       return languageCode;
     }
     return 'fr'; // Langue par défaut
@@ -65,7 +81,7 @@ i18n
     resources: resources,
     lng: 'fr', // On commence avec une langue par défaut, puis on la changera de manière asynchrone
     fallbackLng: 'fr',
-    compatibilityJSON: 'v3' as const,
+    compatibilityJSON: 'v3',
     interpolation: {
       escapeValue: false // React gère déjà l'échappement
     }
