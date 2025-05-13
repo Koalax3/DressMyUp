@@ -20,7 +20,8 @@ const LANGUAGES: Language[] = [
   { code: 'de', name: 'Deutsch', countryCode: 'de' },
   { code: 'es', name: 'España', countryCode: 'es' },
   { code: 'pt', name: 'Português', countryCode: 'pt' },
-  { code: 'it', name: 'Italiano', countryCode: 'it' }
+  { code: 'it', name: 'Italiano', countryCode: 'it' },
+  { code: 'ar', name: 'العربية', countryCode: 'ps' }
 
   
 ];

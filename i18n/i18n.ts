@@ -10,6 +10,7 @@ import de from './locales/de.json';
 import es from './locales/es.json';
 import pt from './locales/pt.json';
 import it from './locales/it.json';
+import ar from './locales/ar.json';
 
 // Ressources de traduction
 const resources = {
@@ -30,6 +31,9 @@ const resources = {
   },
   it: {
     translation: it
+  },
+  ar: {
+    translation: ar
   }
 };
 
