@@ -111,9 +111,6 @@ export default function ClotheView({
     // Déterminer la couleur du fond en fonction du type de correspondance
     const getBackgroundStyle = () => {
       // Si le composant est sélectionnable et qu'il est sélectionné
-      if (selectable && selected) {
-        return { borderColor: colors.primary.main }; // Couleur primaire pour indiquer la sélection
-      }
       
       const defaultBackgroundColor = isDarkMode ? colors.background.deep : colors.white;
       // Sinon, si on doit afficher le statut de correspondance
@@ -167,7 +164,7 @@ export default function ClotheView({
                 </Text>
               </View>
               <View style={styles.rightContainer}>
-                <Ionicons name="chevron-forward" size={20} color={colors.text.light} />
+                <Ionicons name={selectable ? selected ? "checkbox-outline" : "square-outline" : "chevron-forward"} size={selectable ? 30 : 20} color={selected ? colors.primary.main : colors.text.light} />
               </View>
               {matchType === MatchType.DRESS_MATCH && (
                 <View style={styles.dressMatch}>

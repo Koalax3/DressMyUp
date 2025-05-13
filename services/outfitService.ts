@@ -150,7 +150,6 @@ export const fetchOutfitsForWardrobe = async (userId: string, searchQuery?: stri
     if (searchQuery && searchQuery.trim() !== '') {
       query = query.or(`name.ilike.%${searchQuery}%,description.ilike.%${searchQuery}%`);
     }
-
     // Exécuter la requête
     return await query;
   } catch (error) {

@@ -85,7 +85,7 @@ i18n
     resources: resources,
     lng: 'fr', // On commence avec une langue par défaut, puis on la changera de manière asynchrone
     fallbackLng: 'fr',
-    compatibilityJSON: 'v3',
+    compatibilityJSON: 'v4',
     interpolation: {
       escapeValue: false // React gère déjà l'échappement
     }

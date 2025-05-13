@@ -126,7 +126,8 @@
       "willReplaceInfo": "سيتم استبدال المعلومات التي أدخلتها.",
       "accept": "قبول",
       "reject": "رفض",
-      "explore": "استكشاف الإطلالات"
+      "explore": "استكشاف الإطلالات",
+      "findOutfitButton": "ابحث عن إطلالة"
     },
     "explore": {
       "allStyles": "جميع الأنماط",
@@ -140,7 +141,8 @@
       "noOutfitsFound": "لم يتم العثور على إطلالات",
       "noDressMatchOutfitsFound": "لا توجد إطلالات تناسب خزانتك",
       "searchStyle": "ابحث عن نمط...",
-      "title": "استكشاف"
+      "title": "استكشاف",
+      "wardrobe": "خزانتي"
     },
     "outfit": {
       "deleteOutfit": "حذف الإطلالة",

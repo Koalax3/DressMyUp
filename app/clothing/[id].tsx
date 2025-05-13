@@ -19,11 +19,12 @@ import Header from '@/components/Header';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import { useTranslation } from '@/i18n/useTranslation';
-
+import { useOutfit } from '@/contexts/OutfitContext';
 export default function ClothingDetailScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
   const { loadClothing, deleteClothing: deleteClothingFromContext } = useClothing();
+  const { setClothesExploreOutfit } = useOutfit();
   const [clothingItem, setClothingItem] = useState<ClothingItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -153,6 +154,11 @@ export default function ClothingDetailScreen() {
     );
   }
 
+  const exploreClothing = () => {
+    setClothesExploreOutfit([clothingItem]);
+    router.push('/(tabs)/explore');
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
       <ScrollView>
@@ -232,13 +238,10 @@ export default function ClothingDetailScreen() {
 
             <TouchableOpacity 
               style={[styles.outfitButton, { backgroundColor: colors.secondary.main }]}
-              onPress={() => router.push({
-                pathname: '/(tabs)/create',
-                params: { selectItem: clothingItem.id }
-              })}
+              onPress={exploreClothing}
             >
-              <Ionicons name="shirt-outline" size={20} color={colors.white} />
-              <Text style={[styles.outfitButtonText]}>{t('clothing.createOutfitButton')}</Text>
+              <Ionicons name="search-outline" size={20} color={colors.white} />
+              <Text style={[styles.outfitButtonText]}>{t('clothing.findOutfitButton')}</Text>
             </TouchableOpacity>
           </View>}
 

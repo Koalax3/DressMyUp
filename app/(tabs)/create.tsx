@@ -102,7 +102,8 @@ export default function CreateOutfitScreen() {
   const navigateToSelectClothes = () => {
     router.push({
       pathname: '/wardrobe/select',
-      params: { 
+      params: {
+        mode: 'create',
         formName: name,
         formDescription: description,
         formSeason: season,

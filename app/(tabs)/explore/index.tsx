@@ -1,17 +1,9 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { StyleSheet, View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, ScrollView, Image } from 'react-native';
-import { useAuth } from '@/contexts/AuthContext';
-import { useScroll } from '@/contexts/ScrollContext';
-import { ClothingItem, Outfit, User } from '@/types';
+import React, { useRef } from 'react';
+import { StyleSheet, View, Text, FlatList, TouchableOpacity, ActivityIndicator, RefreshControl, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
 import OutfitPreview from '@/components/OutfitPreview';
-import { fetchOutfitsForExplore, fetchLikedOutfitIds, fetchOutfitsForDressMatch, getIdOutfitFromClothe } from '@/services/outfitService';
-import { fetchUserClothes } from '@/services/clothingService';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { genders, seasons, STYLES } from '@/constants/Outfits';
-import { FilterConstraint } from '@/services/supabaseService';
-import { getPreferences } from '@/services/preferencesService';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import Header from '@/components/Header';
@@ -19,36 +11,38 @@ import GenericSelector from '@/components/selector/GenericSelector';
 import { useTranslation } from '@/i18n/useTranslation';
 import DressMatchIcon from '@/assets/images/dress-match.svg';
 import { useClothing } from '@/contexts/ClothingContext';
-import Toast from 'react-native-toast-message';
-// Type simplifié pour l'affichage des tenues
-type OutfitWithUser = Outfit & { user: User } & { clothes: ClothingItem[] };
-
-// Types de filtres disponibles
-type FilterCategory = 'season' | 'occasion' | 'gender';
+import { useExplorerFilter, FilterCategory } from '@/contexts/ExplorerFilterContext';
+import { useMemo } from 'react';
+import { Outfit } from '@/types';
+import { router } from 'expo-router';
+import { useOutfit } from '@/contexts/OutfitContext';
 
 export default function ExploreScreen() {
-  const { user } = useAuth();
+  const { 
+    outfits, 
+    filteredOutfits, 
+    loading, 
+    refreshing, 
+    page, 
+    hasMore, 
+    loadingMore,
+    showFavorites,
+    showDressMatch,
+    activeFilterCategory,
+    filters,
+    setShowFavorites,
+    setShowDressMatch,
+    toggleFilterCategory,
+    updateFilter,
+    resetFilters,
+    loadOutfits,
+    refreshOutfits,
+    hasActiveFilters,
+  } = useExplorerFilter();
+  const { hasClothesExplore } = useOutfit();
   const { t } = useTranslation();
   const { clothes } = useClothing();
-  const [outfits, setOutfits] = useState<OutfitWithUser[]>([]);
-  const [filteredOutfits, setFilteredOutfits] = useState<OutfitWithUser[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [showFavorites, setShowFavorites] = useState(false);
-  const [showDressMatch, setShowDressMatch] = useState(false);
-  const ITEMS_PER_PAGE = 10;
-  const [clothesUser, setClothesUser] = useState<ClothingItem[]>([]);
-  const [activeFilterCategory, setActiveFilterCategory] = useState<FilterCategory | null>(null);
-  const [filters, setFilters] = useState({
-    season: 'all',
-    occasion: 'fav',
-    gender: 'all'
-  });
   const setStyleModalVisible = useRef<((visible: boolean) => void) | null>(null);
-  const [currentFilters, setCurrentFilters] = useState<string>('');
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
 
@@ -78,206 +72,8 @@ export default function ExploreScreen() {
     ]
   }), [t]);
 
-  // Récupérer les IDs des favoris une seule fois et les mettre en cache
-  const likedOutfitIds = useMemo(async () => {
-    if (!user || !showFavorites) return [];
-    return await fetchLikedOutfitIds(user.id);
-  }, [user, showFavorites]);
-
-  useEffect(() => {
-    const fetchClothesUser = async () => {
-      if (!user) return;
-      const clothes = await fetchUserClothes(user.id, []);
-      setClothesUser(clothes);
-    };
-    fetchClothesUser();
-  }, [user]);
-
-  // Fonction pour construire les options de filtre
-  const buildFilterOptions = useCallback(async () => {
-    const filterOptions: FilterConstraint[] = [];
-    
-    if (filters.season !== 'all') {
-      filterOptions.push(['eq', 'season', filters.season]);
-    }
-    
-    if (filters.occasion !== 'all') {
-      if (filters.occasion === 'fav' && user?.id) {
-        const preferences = await getPreferences(user.id);
-        if (preferences) {
-          filterOptions.push(['in', 'occasion', preferences.styles]);
-        }
-      } else {
-        filterOptions.push(['eq', 'occasion', filters.occasion]);
-      }
-    }
-    
-    if (filters.gender !== 'all') {
-      filterOptions.push(['eq', 'gender', filters.gender]);
-    }
-
-    if (showDressMatch) {
-      if (!user) return;
-      const {data, error} = await getIdOutfitFromClothe(clothes);
-      if (data) {
-        const outfitsIds = data.map(clothe => {
-          if(clothe.clothes_outfits.length > 0) {
-            return clothe.clothes_outfits[0].outfit_id;
-          } else {
-            Toast.show({
-              type: 'error',
-              text1: t('explore.noDressMatchOutfitsFound')
-            });
-          }
-          return null;
-        }).filter(id => id !== null);
-        filterOptions.push(['in', 'id', outfitsIds]);
-      }
-    }
-
-    if (showFavorites) {
-      const ids = await likedOutfitIds;
-      if (ids.length === 0) {
-        return null;
-      }
-      filterOptions.push(['in', 'id', ids]);
-    }
-
-    return filterOptions;
-  }, [filters, showFavorites, likedOutfitIds, showDressMatch]);
-
-  // Fonction pour charger les tenues
-  const loadOutfits = useCallback(async (pageNumber = 1, shouldAppend = false) => {
-    if (!user) return;
-    
-    if (shouldAppend) {
-      if (loadingMore || !hasMore) return;
-      setLoadingMore(true);
-    } else {
-      setLoading(true);
-    }
-
-    try {
-      const filterOptions = await buildFilterOptions();
-      
-      if (filterOptions === null) {
-        setOutfits([]);
-        setFilteredOutfits([]);
-        setHasMore(false);
-        return;
-      }
-      if (currentFilters == JSON.stringify(filterOptions)) {
-        return;
-      }
-      setCurrentFilters(JSON.stringify(filterOptions));
-      const response = await fetchOutfitsForExplore(user.id, pageNumber, ITEMS_PER_PAGE, filterOptions);
-      
-      if (!response) {
-        console.error(t('errors.noResponse'));
-        return;
-      }
-      
-      if (response.error) {
-        console.error(t('errors.fetchOutfits'), response.error);
-      } else {
-        const outfitsData = response.data as OutfitWithUser[] || [];
-        
-        if (shouldAppend) {
-          const newOutfits = outfitsData.filter(newOutfit => 
-            !outfits.some(existingOutfit => existingOutfit.id === newOutfit.id)
-          );
-          setOutfits(prev => [...prev, ...newOutfits]);
-          setFilteredOutfits(prev => [...prev, ...newOutfits]);
-          setPage(pageNumber);
-        } else {
-          setOutfits(outfitsData);
-          setFilteredOutfits(outfitsData);
-          setPage(1);
-        }
-        
-        setHasMore(outfitsData.length === ITEMS_PER_PAGE);
-      }
-    } catch (error) {
-      console.error(t('errors.generic'), error);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-      setRefreshing(false);
-    }
-  }, [user, buildFilterOptions, outfits, loadingMore, hasMore, t]);
-
-  // Effet pour gérer les changements de filtres
-  useEffect(() => {
-    loadOutfits(1, false);
-  }, [filters, showFavorites]);
-
-  // Effet pour recharger les données quand on revient sur la page
-  useFocusEffect(
-    useCallback(() => {
-      if (user) {
-        const reloadData = async () => {
-          const filterOptions = await buildFilterOptions();
-          if (filterOptions === null) {
-            setOutfits([]);
-            setFilteredOutfits([]);
-            setHasMore(false);
-            return;
-          }
-          if (currentFilters == JSON.stringify(filterOptions)) {
-            return;
-          }
-          setCurrentFilters(JSON.stringify(filterOptions));
-          const response = await fetchOutfitsForExplore(user.id, 1, ITEMS_PER_PAGE, filterOptions);
-          
-          if (!response) {
-            console.error(t('errors.noResponse'));
-            return;
-          }
-          
-          if (response.error) {
-            console.error(t('errors.fetchOutfits'), response.error);
-          } else {
-            const outfitsData = response.data as OutfitWithUser[] || [];
-            setOutfits(outfitsData);
-            setFilteredOutfits(outfitsData);
-            setPage(1);
-            setHasMore(outfitsData.length === ITEMS_PER_PAGE);
-          }
-        };
-
-        reloadData();
-      }
-    }, [user, buildFilterOptions, t])
-  );
-
-  // Mettre à jour un filtre
-  const updateFilter = (category: FilterCategory, value: string) => {
-    setFilters(prev => ({ ...prev, [category]: value }));
-  };
-
-  // Réinitialiser tous les filtres
-  const resetFilters = () => {
-    setFilters({
-      season: 'all',
-      occasion: 'fav',
-      gender: 'all'
-    });
-    setShowFavorites(false);
-    setActiveFilterCategory(null);
-  };
-
-  // Vérifier si des filtres sont actifs
-  const hasActiveFilters = () => {
-    return filters.season !== 'all' || filters.occasion !== 'fav' || filters.gender !== 'all';
-  };
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadOutfits(1, false);
-  };
-
-  const toggleFilterCategory = (category: FilterCategory) => {
-    setActiveFilterCategory(activeFilterCategory === category ? null : category);
+  const handleToggleFilterCategory = (category: FilterCategory) => {
+    toggleFilterCategory(category);
     
     // Si on vient de sélectionner la catégorie 'occasion', ouvrir automatiquement le sélecteur de style
     if (category === 'occasion' && activeFilterCategory !== 'occasion' && setStyleModalVisible.current) {
@@ -290,8 +86,8 @@ export default function ExploreScreen() {
     }
   };
 
-  const renderOutfitItem = ({ item }: { item: OutfitWithUser }) => (
-    <OutfitPreview outfit={item} userWardrobe={clothesUser} />
+  const renderOutfitItem = ({ item }: { item: Outfit }) => (
+    <OutfitPreview outfit={item} userWardrobe={clothes} />
   );
 
   const renderFilterOptions = (category: FilterCategory) => {
@@ -335,7 +131,7 @@ export default function ExploreScreen() {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background.main }]}>
       <Header title={t('navigation.explore')}>
-        {hasActiveFilters() && (
+        {hasActiveFilters() && filteredOutfits.length > 0 && (
           <TouchableOpacity onPress={resetFilters} style={{...styles.resetButton, backgroundColor:colors.gray}}>
             <Text style={[styles.resetButtonText, { color: colors.primary.main }]}>{t('common.reset')}</Text>
           </TouchableOpacity>
@@ -344,7 +140,7 @@ export default function ExploreScreen() {
 
       <View style={{...styles.filtersContainer}}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterCategoriesContainer}>
-        <TouchableOpacity
+          <TouchableOpacity
             style={[
               styles.filterCategory, 
               { 
@@ -374,6 +170,38 @@ export default function ExploreScreen() {
               ]}
             >
               {t('explore.favorites')}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.filterCategory, 
+              { 
+                backgroundColor: hasClothesExplore 
+                  ? colors.primary.main 
+                  : colors.gray
+              }
+            ]}
+            onPress={() => router.push({ pathname: '/wardrobe/select', params: { mode: 'explore' } })}
+          >
+            <MaterialCommunityIcons 
+              name="hanger" 
+              size={16} 
+              color={hasClothesExplore 
+                ? colors.white 
+                : colors.text.main
+              } 
+            />
+            <Text 
+              style={[
+                styles.filterCategoryText, 
+                { 
+                  color: hasClothesExplore 
+                    ? colors.white 
+                    : colors.text.main 
+                }
+              ]}
+            >
+              {t('explore.wardrobe')}
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -413,7 +241,7 @@ export default function ExploreScreen() {
                   : colors.gray 
               }
             ]}
-            onPress={() => toggleFilterCategory('season')}
+            onPress={() => handleToggleFilterCategory('season')}
           >
             <Ionicons 
               name="sunny-outline" 
@@ -445,43 +273,50 @@ export default function ExploreScreen() {
             searchable={true}
             searchPlaceholder={t('explore.searchStyle')}
           >
-            {(setModalVisible) => (
-              <TouchableOpacity
-                style={[
-                  styles.filterCategory, 
-                  { 
-                    backgroundColor: activeFilterCategory === 'occasion' 
-                      ? colors.primary.main 
-                      : colors.gray 
-                  }
-                ]}
-                onPress={() => {
-                  toggleFilterCategory('occasion');
-                  setModalVisible(true);
-                }}
-              >
-                <Ionicons 
-                  name="shirt-outline" 
-                  size={16} 
-                  color={activeFilterCategory === 'occasion' 
-                    ? colors.white 
-                    : colors.text.main
-                  } 
-                />
-                <Text 
+            {(setModalVisible) => {
+              // Stocker la référence pour l'ouvrir programmatiquement plus tard
+              if (setStyleModalVisible.current !== setModalVisible) {
+                setStyleModalVisible.current = setModalVisible;
+              }
+              
+              return (
+                <TouchableOpacity
                   style={[
-                    styles.filterCategoryText, 
+                    styles.filterCategory, 
                     { 
-                      color: activeFilterCategory === 'occasion' 
-                        ? colors.white 
-                        : colors.text.main 
+                      backgroundColor: activeFilterCategory === 'occasion' 
+                        ? colors.primary.main 
+                        : colors.gray 
                     }
                   ]}
+                  onPress={() => {
+                    handleToggleFilterCategory('occasion');
+                    setModalVisible(true);
+                  }}
                 >
-                  {t('explore.style')}
-                </Text>
-              </TouchableOpacity>
-            )}
+                  <Ionicons 
+                    name="shirt-outline" 
+                    size={16} 
+                    color={activeFilterCategory === 'occasion' 
+                      ? colors.white 
+                      : colors.text.main
+                    } 
+                  />
+                  <Text 
+                    style={[
+                      styles.filterCategoryText, 
+                      { 
+                        color: activeFilterCategory === 'occasion' 
+                          ? colors.white 
+                          : colors.text.main 
+                      }
+                    ]}
+                  >
+                    {t('explore.style')}
+                  </Text>
+                </TouchableOpacity>
+              );
+            }}
           </GenericSelector>
 
           <TouchableOpacity
@@ -493,7 +328,7 @@ export default function ExploreScreen() {
                   : colors.gray
               }
             ]}
-            onPress={() => toggleFilterCategory('gender')}
+            onPress={() => handleToggleFilterCategory('gender')}
           >
             <Ionicons 
               name="people-outline" 
@@ -534,13 +369,13 @@ export default function ExploreScreen() {
           data={filteredOutfits}
           renderItem={renderOutfitItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.outfitList}
+          contentContainerStyle={[styles.outfitList, { flex: filteredOutfits.length > 0 ? 0 : 1 }]}
           columnWrapperStyle={{ justifyContent: 'space-between', gap: 10 }}
           numColumns={2}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
-              onRefresh={onRefresh}
+              onRefresh={refreshOutfits}
               colors={[colors.primary.main]}
               tintColor={colors.primary.main}
             />
@@ -556,17 +391,11 @@ export default function ExploreScreen() {
               <View style={styles.loadingMoreContainer}>
                 <ActivityIndicator size="small" color={colors.primary.main} />
               </View>
-            ) : (
-              filters.occasion === 'fav' ? <View style={styles.loadingMoreContainer}>
-                <TouchableOpacity onPress={() => setFilters({...filters, occasion: 'all'})} style={[styles.createButton, { backgroundColor: colors.primary.main }]}>
-                  <Text style={styles.createButtonText}>{t('explore.showMoreOutfits')}</Text>
-                </TouchableOpacity>
-              </View> : null
-            )
+            ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="search" size={64} color={colors.text.light} />
+              <Ionicons name="search" size={64} color={colors.darkGray} />
               <Text style={[styles.emptyText, { color: colors.text.main }]}>
                 {t('explore.noOutfitsFound')}
               </Text>
@@ -648,6 +477,7 @@ const styles = StyleSheet.create({
   outfitList: {
     padding: 8,
     marginHorizontal: 'auto',
+    position: 'relative',
   },
   loadingContainer: {
     flex: 1,
@@ -663,8 +493,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
-    marginTop: 40,
   },
   emptyText: {
     fontSize: 16,

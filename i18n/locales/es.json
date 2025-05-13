@@ -126,7 +126,8 @@
       "willReplaceInfo": "Esto reemplazará la información que has introducido.",
       "accept": "Aceptar",
       "reject": "Rechazar",
-      "explore": "Explorar conjuntos"
+      "explore": "Explorar conjuntos",
+      "findOutfitButton": "Encontrar un conjunto"
     },
     "explore": {
       "allStyles": "Todos los estilos",
@@ -140,7 +141,8 @@
       "noOutfitsFound": "No se encontraron conjuntos",
       "noDressMatchOutfitsFound": "No hay conjuntos que combinen con tu armario",
       "searchStyle": "Buscar estilo...",
-      "title": "Descubrir"
+      "title": "Descubrir",
+      "wardrobe": "Armario"
     },
     "outfit": {
       "deleteOutfit": "Eliminar conjunto",

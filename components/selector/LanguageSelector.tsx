@@ -22,8 +22,6 @@ const LANGUAGES: Language[] = [
   { code: 'pt', name: 'Português', countryCode: 'pt' },
   { code: 'it', name: 'Italiano', countryCode: 'it' },
   { code: 'ar', name: 'العربية', countryCode: 'ps' }
-
-  
 ];
 
 const LanguageSelector = () => {

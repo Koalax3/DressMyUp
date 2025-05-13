@@ -126,7 +126,8 @@
       "willReplaceInfo": "Questo sostituirà le informazioni inserite.",
       "accept": "Accetta",
       "reject": "Rifiuta",
-      "explore": "Esplora outfit"
+      "explore": "Esplora outfit",
+      "findOutfitButton": "Trova un outfit"
     },
     "explore": {
       "allStyles": "Tutti gli stili",
@@ -140,7 +141,8 @@
       "noOutfitsFound": "Nessun outfit trovato",
       "noDressMatchOutfitsFound": "Nessun outfit corrisponde al tuo guardaroba",
       "searchStyle": "Cerca stile...",
-      "title": "Esplora"
+      "title": "Esplora",
+      "wardrobe": "Guardaroba"
     },
     "outfit": {
       "deleteOutfit": "Elimina outfit",

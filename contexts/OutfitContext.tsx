@@ -1,24 +1,32 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { ClothingWithPosition, Outfit } from '@/types';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { ClothingItem, ClothingWithPosition, Outfit } from '@/types';
 import { useAuth } from './AuthContext';
 import * as OutfitService from '@/services/outfitService';
 
 interface OutfitContextType {
     clothescreateOutfit: ClothingWithPosition[];
     setClothescreateOutfit: (clothescreateOutfit: ClothingWithPosition[]) => void;
+    clothesExploreOutfit: ClothingItem[];
+    setClothesExploreOutfit: (clothesExploreOutfit: ClothingItem[]) => void;
     outfits: Outfit[];
     isLoading: boolean;
     refreshOutfits: () => Promise<void>;
     hasOutfits: boolean;
+    hasClothesExplore: boolean;
 }
 
 const OutfitContext = createContext<OutfitContextType | undefined>(undefined);
 
 export const OutfitProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [clothescreateOutfit, setClothescreateOutfit] = useState<ClothingWithPosition[]>([]);
+    const [clothesExploreOutfit, setClothesExploreOutfit] = useState<ClothingItem[]>([]);
     const [outfits, setOutfits] = useState<Outfit[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const { user } = useAuth();
+
+    const hasClothesExplore = useMemo(() => {
+        return clothesExploreOutfit.length > 0;
+    }, [clothesExploreOutfit]);
 
     const fetchOutfits = async () => {
         if (!user) return;
@@ -50,10 +58,13 @@ export const OutfitProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         <OutfitContext.Provider value={{ 
             clothescreateOutfit, 
             setClothescreateOutfit,
+            clothesExploreOutfit,
+            setClothesExploreOutfit,
             outfits,
             isLoading,
             refreshOutfits,
-            hasOutfits
+            hasOutfits,
+            hasClothesExplore
         }}>
             {children}
         </OutfitContext.Provider>

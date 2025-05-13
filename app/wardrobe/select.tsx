@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, TextInput, Image, ScrollView } from 'react-native';
-import { supabase } from '../../constants/Supabase';
+import React, { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, Text, TouchableOpacity, ActivityIndicator, RefreshControl, Animated, ScrollView } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { ClothingItem } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ClotheFilterModal, { ClotheFilters as Filters } from '../../components/ClotheFilterModal';
-import { COLORS, BRANDS, types, subtypesByType, PATTERNS } from '../../constants/Clothes';
+import { types } from '../../constants/Clothes';
 import ClotheView from '@/components/ClotheView';
 import { useTheme } from '@/contexts/ThemeContext';
-import { ColorsTheme, getThemeColors } from '@/constants/Colors';
+import { getThemeColors } from '@/constants/Colors';
 import SearchBar from '@/components/SearchBar';
 import { useOutfit } from '@/contexts/OutfitContext';
 import { useTranslation } from 'react-i18next';
+import { useClothing } from '@/contexts/ClothingContext';
 
 type WardrobeSelectParams = {
   multiple?: string;
@@ -24,6 +24,7 @@ type WardrobeSelectParams = {
   formSeason?: string;
   formOccasion?: string;
   formImage?: string;
+  mode?: 'create' | 'explore';
 };
 
 export default function WardrobeSelectScreen() {
@@ -32,9 +33,10 @@ export default function WardrobeSelectScreen() {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
   const params = useLocalSearchParams<WardrobeSelectParams>();
-  const { clothescreateOutfit, setClothescreateOutfit } = useOutfit();
+  const { clothescreateOutfit, setClothescreateOutfit, clothesExploreOutfit, setClothesExploreOutfit } = useOutfit();
+  const { clothes: userClothes, isLoading: clothesLoading, refreshClothes } = useClothing();
   const enableMatching = params.enableMatching === 'true';
-  const [clothes, setClothes] = useState<ClothingItem[]>([]);
+  
   const [filteredClothes, setFilteredClothes] = useState<ClothingItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -48,40 +50,12 @@ export default function WardrobeSelectScreen() {
     materials: [],
     colorFilterMode: 'differentItems'
   });
-  const [selectedClothes, setSelectedClothes] = useState<string[]>(clothescreateOutfit.map(clothe => clothe.id));
+  const [selectedClothes, setSelectedClothes] = useState<string[]>(
+    params.mode === 'create' ? clothescreateOutfit.map(clothe => clothe.id) : clothesExploreOutfit.map(clothe => clothe.id)
+  );
   const { t } = useTranslation();
   
-  const fetchClothes = async () => {
-    if (!user) return;
-
-    try {
-      setLoading(true);
-      let query = supabase
-        .from('clothes')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-      if (typeFilter) {
-        query = query.eq('type', typeFilter);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Erreur lors de la récupération des vêtements:', error);
-      } else {
-        setClothes(data || []);
-        applyFilters(data || [], searchText, typeFilter, advancedFilters);
-      }
-    } catch (error) {
-      console.error('Erreur:', error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
+  // Appliquer les filtres aux vêtements
   const applyFilters = (
     items: ClothingItem[], 
     search: string, 
@@ -144,37 +118,46 @@ export default function WardrobeSelectScreen() {
     }
 
     setFilteredClothes(filtered);
+    setLoading(false);
   };
 
+  // Effet pour appliquer les filtres à chaque changement
   useEffect(() => {
-    if (clothes.length > 0) {
-      applyFilters(clothes, searchText, typeFilter, advancedFilters);
+    if (userClothes.length > 0) {
+      applyFilters(userClothes, searchText, typeFilter, advancedFilters);
     }
-  }, [searchText, typeFilter, advancedFilters]);
+  }, [searchText, typeFilter, advancedFilters, userClothes]);
 
+  // Effet pour initialiser les vêtements filtrés
+  useEffect(() => {
+    if (!clothesLoading) {
+      applyFilters(userClothes, searchText, typeFilter, advancedFilters);
+    }
+  }, [clothesLoading, userClothes]);
+
+  // Focus effect pour recharger les données
   useFocusEffect(
     React.useCallback(() => {
-      fetchClothes();
-    }, [user, typeFilter, advancedFilters, searchText])
+      setLoading(true);
+      applyFilters(userClothes, searchText, typeFilter, advancedFilters);
+    }, [user, userClothes])
   );
 
   const handleSearchTextChange = (text: string) => {
     setSearchText(text);
-    applyFilters(clothes, text, typeFilter, advancedFilters);
+    applyFilters(userClothes, text, typeFilter, advancedFilters);
   };
 
   const handleApplyFilters = (newFilters: Filters) => {
     setAdvancedFilters(newFilters);
-    applyFilters(clothes, searchText, typeFilter, newFilters);
+    applyFilters(userClothes, searchText, typeFilter, newFilters);
   };
-
-  useEffect(() => {
-    fetchClothes();
-  }, [user, typeFilter, advancedFilters, searchText]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchClothes();
+    refreshClothes().then(() => {
+      setRefreshing(false);
+    });
   };
 
   const openFilterModal = () => {
@@ -190,7 +173,11 @@ export default function WardrobeSelectScreen() {
   };
 
   const confirmSelection = () => {
-    setClothescreateOutfit(selectedClothes.map(id => clothes.find(c => c.id === id)!));
+    if (params.mode === 'create') {
+      setClothescreateOutfit(selectedClothes.map(id => userClothes.find(c => c.id === id)!));
+    } else if (params.mode === 'explore') {
+      setClothesExploreOutfit(selectedClothes.map(id => userClothes.find(c => c.id === id)!));
+    }
     router.back();
   };
 
@@ -200,7 +187,7 @@ export default function WardrobeSelectScreen() {
 
   const handleTypeFilterChange = (newType: string | null) => {
     setTypeFilter(newType);
-    applyFilters(clothes, searchText, newType, advancedFilters);
+    applyFilters(userClothes, searchText, newType, advancedFilters);
   };
 
   const FilterButton = ({ title, value }: { title: string; value: string | null }) => (
@@ -212,7 +199,7 @@ export default function WardrobeSelectScreen() {
       ]}
       onPress={() => {
         setTypeFilter(value);
-        applyFilters(clothes, searchText, value, advancedFilters);
+        applyFilters(userClothes, searchText, value, advancedFilters);
       }}
     >
       <Text
@@ -230,7 +217,7 @@ export default function WardrobeSelectScreen() {
   const handleFilterModalClose = (newFilters?: Filters) => {
     if (newFilters) {
       setAdvancedFilters(newFilters);
-      applyFilters(clothes, searchText, typeFilter, newFilters);
+      applyFilters(userClothes, searchText, typeFilter, newFilters);
     }
     setShowFilterModal(false);
   };
@@ -239,7 +226,7 @@ export default function WardrobeSelectScreen() {
     setTypeFilter(null);
     setSearchText('');
     setAdvancedFilters({ brands: [], colors: [], patterns: [], materials: [], colorFilterMode: 'differentItems' });
-    setFilteredClothes(clothes);
+    setFilteredClothes(userClothes);
   };
 
   const renderTypeFilters = () => {
@@ -269,7 +256,7 @@ export default function WardrobeSelectScreen() {
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={colors.text.main} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.text.main }]}>Sélectionner des vêtements</Text>
+          <Text style={[styles.title, { color: colors.text.main }]}>{t('outfit.selectedClothes')}</Text>
           <View style={{ width: 24 }} />
         </View>
         
@@ -293,7 +280,7 @@ export default function WardrobeSelectScreen() {
         {renderTypeFilters()}
       </View>
 
-      {loading && !refreshing ? (
+      {loading || clothesLoading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={colors.primary.main} />
         </View>
@@ -302,13 +289,13 @@ export default function WardrobeSelectScreen() {
           <Ionicons name="shirt-outline" size={80} color={colors.text.lighter} />
           <Text style={[styles.emptyText, { color: colors.text.main }]}>
             {searchText || getFilterCount() > 0 
-              ? 'Aucun vêtement ne correspond à votre recherche' 
-              : 'Votre garde-robe est vide'}
+              ? t('common.noClothesFound')
+              : t('common.emptyWardrobe')}
           </Text>
           <Text style={[styles.emptySubtext, { color: colors.text.lighter }]}>
             {searchText || getFilterCount() > 0
-              ? 'Essayez avec d\'autres termes ou filtres'
-              : 'Commencez à ajouter vos vêtements en appuyant sur le bouton +'}
+              ? t('common.tryOtherTermsOrFilters')
+              : t('common.startAddingClothes')}
           </Text>
         </View>
       ) : (
@@ -319,7 +306,7 @@ export default function WardrobeSelectScreen() {
               clothingItem={item}
               showMatchStatus={enableMatching}
               userWardrobeItems={selectedClothes.length > 0 ? 
-                clothes.filter(c => selectedClothes.includes(c.id)) : 
+                userClothes.filter(c => selectedClothes.includes(c.id)) : 
                 undefined}
               selectable={true}
               selected={selectedClothes.includes(item.id)}
@@ -343,7 +330,7 @@ export default function WardrobeSelectScreen() {
         visible={showFilterModal}
         onClose={handleFilterModalClose}
         onApplyFilters={handleApplyFilters}
-        clothes={clothes}
+        clothes={userClothes}
         currentFilters={advancedFilters}
       />
 
@@ -351,13 +338,11 @@ export default function WardrobeSelectScreen() {
         <TouchableOpacity
           style={[
             styles.confirmButton,
-            selectedClothes.length === 0 && styles.confirmButtonDisabled
           ]}
           onPress={confirmSelection}
-          disabled={selectedClothes.length === 0}
         >
           <Text style={styles.confirmButtonText}>
-            Confirmer la sélection ({selectedClothes.length})
+            {t('common.confirm')} ({selectedClothes.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -393,31 +378,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  searchBar: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 40,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 16,
-    color: '#333',
-  },
   filterIconButton: {
     marginLeft: 10,
     width: 40,
     height: 40,
     borderRadius: 8,
-    backgroundColor: '#f5f5f5',
-    borderWidth: 2,
-    borderColor: ColorsTheme.primary.main,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -472,63 +437,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingBottom: 80,
   },
-  clothingItem: {
-    flexDirection: 'row',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-    alignItems: 'center',
-  },
-  selectedItem: {
-    backgroundColor: '#FFE5E5',
-    borderWidth: 1,
-    borderColor: '#F97A5C',
-  },
-  clothingImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 8,
-    marginRight: 10,
-  },
-  clothingInfo: {
-    flex: 1,
-  },
-  clothingName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  clothingBrand: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-  clothingColor: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 2,
-  },
-  checkboxContainer: {
-    width: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    borderWidth: 2,
-    borderColor: '#ccc',
-  },
-  checkboxChecked: {
-    width: 22,
-    height: 22,
-    borderRadius: 4,
-    backgroundColor: '#F97A5C',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   footer: {
     position: 'absolute',
     bottom: 0,
@@ -562,7 +470,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
   filterButtonActive: {
-    backgroundColor: ColorsTheme.primary.main,
+    backgroundColor: '#F97A5C',
   },
   filterButtonText: {
     fontSize: 14,
