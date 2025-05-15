@@ -3,7 +3,6 @@ import { ClothingItem, Outfit, User } from '@/types';
 import { useAuth } from './AuthContext';
 import { useClothing } from './ClothingContext';
 import { fetchOutfitsForExplore, fetchLikedOutfitIds, getIdOutfitFromClothe } from '@/services/outfitService';
-import { getPreferences } from '@/services/preferencesService';
 import { FilterConstraint } from '@/services/supabaseService';
 import Toast from 'react-native-toast-message';
 import { useTranslation } from '@/i18n/useTranslation';
@@ -49,6 +48,7 @@ const ExplorerFilterContext = createContext<ExplorerFilterContextType | undefine
 export const ExplorerFilterProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const { clothes } = useClothing();
+  const { getUserPreferences } = useAuth();
   const { clothesExploreOutfit, setClothesExploreOutfit } = useOutfit();
   const { t } = useTranslation();
   const [outfits, setOutfits] = useState<OutfitWithUser[]>([]);
@@ -85,7 +85,7 @@ export const ExplorerFilterProvider: React.FC<{ children: ReactNode }> = ({ chil
     
     if (filters.occasion !== 'all') {
       if (filters.occasion === 'fav' && user?.id) {
-        const preferences = await getPreferences(user.id);
+        const preferences = await getUserPreferences();
         if (preferences) {
           filterOptions.push(['in', 'occasion', preferences.styles]);
         }
@@ -107,8 +107,12 @@ export const ExplorerFilterProvider: React.FC<{ children: ReactNode }> = ({ chil
                 }
                 return null;
             }).filter(id => id !== null);
+            console.log(outfitsIds);
             if (outfitsIds.length > 0) {
                 filterOptions.push(['in', 'id', outfitsIds]);
+            }
+            else {
+                filterOptions.push(['eq', 'id', 'b2f33c5f-e8af-4a1e-b883-4caadecafa41']);
             }
         }
     }

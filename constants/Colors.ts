@@ -42,7 +42,8 @@ export const ColorsTheme = {
   white: "#FFFFFF",
   black: "#101010",
   gray: "#F9F9F9",
-  darkGray: "#747d8c"
+  darkGray: "#747d8c",
+  vinted: "#007580",
 }
 
 export const DarkColorsTheme = {
@@ -90,6 +91,7 @@ export const DarkColorsTheme = {
   black: "#101010",
   gray: "#1E293B",
   darkGray: "#747d8c",
+  vinted: "#007580",
 }
 
 export const getThemeColors = (isDarkMode: boolean) => 

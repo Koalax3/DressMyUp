@@ -108,7 +108,6 @@ export const getIdOutfitFromClothe = async (clothes: ClothingItem[]) => {
         andConditions.push(`color.eq.${clothe.color}`);
       }
     }
-    if (clothe.brand) andConditions.push(`brand.eq.${clothe.brand}`);
     if (clothe.subtype) andConditions.push(`subtype.eq.${clothe.subtype}`);
     if (clothe.material && clothe.pattern){
       andConditions.push(`or(material.eq.${clothe.material},pattern.eq.${clothe.pattern})`);
@@ -121,6 +120,7 @@ export const getIdOutfitFromClothe = async (clothes: ClothingItem[]) => {
     return `and(${andConditions.join(',')})`;
   }).filter(condition => condition !== 'and()');
   query = query.or(orConditions.join(',').replaceAll(' ', '%20'));
+  console.log(query);
   return await query;
 };
 

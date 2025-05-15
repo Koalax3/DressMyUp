@@ -16,6 +16,8 @@ export type CreateClothingData = {
   image_url: string;
   material?: string;
   reference?: string;
+  external_link?: string | null;
+  vinted_link?: string | null;
 };
 const TABLE_NAME = 'clothes';
 // Création d'un vêtement
@@ -36,6 +38,8 @@ export const createClothing = async (userId: string, clothingData: CreateClothin
           material: clothingData.material,
           image_url: clothingData.image_url,
           reference: clothingData.reference,
+          external_link: clothingData.external_link,
+          vinted_link: clothingData.vinted_link,
           created_at: new Date().toISOString(),
         },
       ])
@@ -171,6 +175,8 @@ export const updateClothing = async (id: string, userId: string, clothingData: P
         material: clothingData.material,
         image_url: clothingData.image_url,
         reference: clothingData.reference,
+        external_link: clothingData.external_link,
+        vinted_link: clothingData.vinted_link,
       })
       .eq('id', id)
       .eq('user_id', userId);

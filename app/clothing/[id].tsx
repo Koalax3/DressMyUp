@@ -1,16 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Share } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClothing } from '../../contexts/ClothingContext';
 import { ClothingItem } from '../../types';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { Link, router, useLocalSearchParams } from 'expo-router';
 import { deleteClothing } from '../../services/clothingService';
-import { subtypesByType, types } from '@/constants/Clothes';
-import { fits } from '@/constants/Clothes';
-import { PATTERNS } from '@/constants/Clothes';
-import { MATERIALS } from '@/constants/Materials';
 import MatchingClothesSection from '@/components/MatchingClothesSection';
 import { ColorsTheme } from '@/constants/Colors';
 import MultiColorDisplay from '@/components/MultiColorDisplay';
@@ -20,6 +16,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import { useTranslation } from '@/i18n/useTranslation';
 import { useOutfit } from '@/contexts/OutfitContext';
+import ButtonLink from '@/components/ui/ButtonLink';
+import VintedLogo from '@/assets/images/vinted.svg';
 export default function ClothingDetailScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
@@ -244,9 +242,13 @@ export default function ClothingDetailScreen() {
               <Text style={[styles.outfitButtonText]}>{t('clothing.findOutfitButton')}</Text>
             </TouchableOpacity>
           </View>}
-
           {user && user.id !== clothingItem.user_id && <MatchingClothesSection currentItem={clothingItem} />}
 
+          {(clothingItem.external_link || clothingItem.vinted_link) && <View style={styles.linksContainer}>
+            <Text style={[styles.linkLabel, { color: colors.text.main }]}>{t('clothing.linksLabel')}</Text>
+          {clothingItem.external_link && <ButtonLink url={clothingItem.external_link} style={{ backgroundColor: isDarkMode ? colors.white : colors.black }} textColor={isDarkMode ? colors.black : colors.white} iconColor={isDarkMode ? colors.black : colors.white} title={t('clothing.externalLink')} icon="cart" warning />}
+          {clothingItem.vinted_link && <ButtonLink url={clothingItem.vinted_link} style={{ backgroundColor: colors.vinted }} title={t('clothing.vintedLink')} otherIcon={<VintedLogo width={18} height={18} fill={colors.white} style={{ marginRight: 8 }} />} />}
+          </View>}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -415,5 +417,17 @@ const styles = StyleSheet.create({
   },
   matchButtonIcon: {
     marginRight: 10,
+  },
+  linksContainer: {
+    flexDirection: 'column',
+    marginTop: 20,
+    gap: 10,
+  },
+  linkLabel: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  externalLink: {
+    marginVertical: 8,
   },
 }); 

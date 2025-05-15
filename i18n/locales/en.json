@@ -117,6 +117,11 @@
     "patternLabel": "Pattern",
     "materialLabel": "Material",
     "fitLabel": "Fit",
+    "links": "Links",
+    "externalLink": "External Link",
+    "externalLinkPlaceholder": "https://www.clothing-site.com/item",
+    "vintedLink": "Vinted Link",
+    "vintedLinkPlaceholder": "https://www.vinted.com/item",
     "modifyButton": "Modify",
     "createOutfitButton": "Create outfit",
     "findOutfitButton": "Find outfit",
@@ -127,7 +132,12 @@
     "willReplaceInfo": "This will replace the information you have entered.",
     "accept": "Accept",
     "reject": "Reject",
-    "explore": "Explore outfits"
+    "explore": "Explore outfits",
+    "name": "Name",
+    "namePlaceholder": "Clothing name",
+    "image": "Image",
+    "details": "Details",
+    "externalLinkWarning": "You are about to leave the app and navigate to: {{url}}\n\nDo you want to continue?"
   },
   "explore": {
     "allStyles": "All styles",
@@ -313,7 +323,8 @@
     "deleteOutfitError": "Error deleting outfit:",
     "profileUpdateError": "An error occurred while updating your profile",
     "avatarUploadError": "An error occurred while uploading your avatar",
-    "error": "Error"
+    "error": "Error",
+    "externalLinkError": "Unable to open external link"
   },
   "success": {
     "saved": "Saved successfully",
@@ -524,5 +535,14 @@
     "abricot": "Apricot",
     "multicolor": "Multicolor"
   },
-  "DressMatch": "DressMatch"
+  "DressMatch": "DressMatch",
+  "buttonLink": {
+    "openLink": "Open link",
+    "visitWebsite": "Visit website",
+    "shopOnline": "Shop online",
+    "viewOnVinted": "View on Vinted",
+    "leaveApp": "Leave app",
+    "continueToLink": "Continue to link",
+    "openInBrowser": "Open in browser"
+  }
 }

@@ -18,19 +18,21 @@ export type ClothingSubType =
   | 'hat' | 'scarf' | 'belt' | 'bag' | 'socks' | 'jewelry' | 'watch' | 'glasses' | 'nylon' // accessory
   | 'dress' | 'jumpsuit' | 'suit' | 'overalls';  // ensemble
   
-  export type CreateClothingItem = {
-    user_id: string;
-    name: string;
-    type: ClothingType;
-    subtype: ClothingSubType;
-    brand?: string;
-    color: string;
-    fit?: 'slim' | 'regular' | 'loose' | 'oversize';
-    pattern: Pattern | null;
-    material?: string;
-    image_url: string;
-    reference?: string;
-    created_at: string;
+export type CreateClothingItem = {
+  user_id: string;
+  name: string;
+  type: ClothingType;
+  subtype: ClothingSubType;
+  brand?: string;
+  color: string;
+  fit?: 'slim' | 'regular' | 'loose' | 'oversize';
+  pattern: Pattern | null;
+  material?: string;
+  image_url: string;
+  reference?: string;
+  external_link?: string;
+  vinted_link?: string;
+  created_at: string;
 };
 
 export type ClothingItem = CreateClothingItem & {
@@ -86,3 +88,11 @@ export type Follow = {
   following_id: string;
   created_at: string;
 }; 
+
+export type UserPreferences = {
+  id?: string;
+  user_id: string;
+  styles: string[];
+  created_at?: string;
+};
+

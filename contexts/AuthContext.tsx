@@ -1,18 +1,22 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { supabase } from '../constants/Supabase';
-import { User } from '../types';
+import { User, UserPreferences } from '../types';
 import { Alert } from 'react-native';
 import { router } from 'expo-router';
 import LoadingView from '@/components/LoadingView';
+import { getPreferences, updatePreferences } from '@/services/preferencesService';
 
 type AuthContextType = {
   user: User | null;
+  userPreferences: UserPreferences | null;
   session: any;
   loading: boolean;
   signUp: (email: string, password: string, username: string, data?: Object) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<User>) => Promise<{ error: any }>;
+  getUserPreferences: () => Promise<UserPreferences | null>;
+  changeUserPreferences: (preferences: {styles:string[]}) => Promise<UserPreferences | null>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -20,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences | null>(null);
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
@@ -311,8 +316,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const getUserPreferences = async () => {
+    console.log("Récupération des préférences de l'utilisateur:", userPreferences, user);
+    if (userPreferences) return userPreferences;
+    const data = await getPreferences(user?.id|| '');
+    setUserPreferences(data);
+    console.log("Préférences récupérées avec succès:", data);
+    return data;
+  };
+
+  const changeUserPreferences = async (preferences: {styles:string[]}) => {
+    const data = await updatePreferences(user?.id|| '', preferences.styles);
+    setUserPreferences(data);
+    return data;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, updateProfile }}>
+    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut, updateProfile, userPreferences, getUserPreferences, changeUserPreferences }}>
       {loading ? <LoadingView /> : children}
     </AuthContext.Provider>
   );

@@ -22,6 +22,8 @@ import Toast from 'react-native-toast-message';
 import { ClothingService } from '@/services';
 import debounce from 'lodash/debounce';
 import { useTranslation } from 'react-i18next';
+import Accordion from './Accordion';
+
 export type ClothingFormData = {
   name: string;
   reference?: string;
@@ -33,6 +35,8 @@ export type ClothingFormData = {
   material?: string | null;
   fit?: 'slim' | 'regular' | 'loose' | 'oversize';
   image_url?: string | null;
+  external_link?: string | null;
+  vinted_link?: string | null;
 };
 
 interface ClothingFormProps {
@@ -71,6 +75,8 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
   const [isCheckingReference, setIsCheckingReference] = useState(false);
   const [foundItem, setFoundItem] = useState<ClothingItem | null>(null);
   const [showSuggestionModal, setShowSuggestionModal] = useState(false);
+  const [externalLink, setExternalLink] = useState<string | null | undefined>(initialData.external_link || null);
+  const [vintedLink, setVintedLink] = useState<string | null | undefined>(initialData.vinted_link || null);
   const { t } = useTranslation();
   // Fonction de vérification de référence avec debounce
   const checkReference = useCallback(
@@ -126,6 +132,8 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
     setFit(initialData.fit || null);
     setImage(initialData.image_url || null);
     setOriginalImage(initialData.image_url || null);
+    setExternalLink(initialData.external_link || null);
+    setVintedLink(initialData.vinted_link || null);
     setImageChanged(false);
   }, [initialData]);
 
@@ -136,17 +144,6 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
 
   // Obtenir les sous-types pour le type sélectionné
   const availableSubtypes = type ? subtypesByType[type] || {} : {};
-
-  // Convertir les constantes en options pour GenericSelector
-  const colorOptions = COLORS.map(color => ({
-    key: color.id,
-    label: color.id,
-  }));
-
-  const brandOptions = BRANDS.map(brand => ({
-    key: brand,
-    label: brand,
-  }));
 
   const patternOptions = Object.entries(PATTERNS).map(([key, label]) => ({
     key,
@@ -181,6 +178,8 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
       material,
       fit: fit as 'slim' | 'regular' | 'loose' | 'oversize' | undefined,
       image_url: image,
+      external_link: externalLink || null,
+      vinted_link: vintedLink || null,
     };
 
     try {
@@ -283,6 +282,7 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
         onColorSelect={setColor}
       />
 
+      <Accordion title={t('clothing.details')} colors={colors}>
       <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.brand')}</Text>
       <BrandSelector
         selectedBrand={brand || null}
@@ -309,14 +309,61 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
         searchPlaceholder={t('clothing.searchMaterial')}
       />
 
-      <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.fitLabel')}</Text>
-      <GenericSelector
-        options={fits}
-        selectedOption={fit || ''}
-        onOptionSelect={(selected) => setFit(typeof selected === 'string' ? selected : null)}
-        title={t('clothing.selectFit')}
-        placeholder={t('clothing.selectFit')}
-      />
+      {type !== 'accessory' && type !== 'shoes' && (
+        <View>
+          <Text style={[styles.label, { color: colors.text.main }]}>{t('clothing.fitLabel')}</Text>
+          <GenericSelector
+            options={fits}
+            selectedOption={fit || ''}
+            onOptionSelect={(selected) => setFit(typeof selected === 'string' ? selected : null)}
+            title={t('clothing.selectFit')}
+            placeholder={t('clothing.selectFit')}
+          />
+      </View>)}
+      </Accordion>
+
+      {/* Accordéon pour les liens */}
+      <Accordion title={t('clothing.links')} colors={colors}>
+        <Text style={[styles.label, { color: colors.text.main }]}>
+          {t('clothing.addExternalLink')}
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            { 
+              backgroundColor: colors.gray,
+              color: colors.text.main,
+              borderColor: externalLink ? colors.primary.main : undefined
+            }
+          ]}
+          placeholder={t('clothing.externalLinkPlaceholder')}
+          value={externalLink || ''}
+          onChangeText={setExternalLink}
+          placeholderTextColor={colors.text.light}
+          autoCapitalize="none"
+          keyboardType="url"
+        />
+        
+        <Text style={[styles.label, { color: colors.text.main, marginTop: 15 }]}>
+          {t('clothing.addVintedLink')}
+        </Text>
+        <TextInput
+          style={[
+            styles.input,
+            { 
+              backgroundColor: colors.gray,
+              color: colors.text.main,
+              borderColor: vintedLink ? colors.primary.main : undefined
+            }
+          ]}
+          placeholder={t('clothing.vintedLinkPlaceholder')}
+          value={vintedLink || ''}
+          onChangeText={setVintedLink}
+          placeholderTextColor={colors.text.light}
+          autoCapitalize="none"
+          keyboardType="url"
+        />
+      </Accordion>
 
       <TouchableOpacity
         style={[
@@ -474,6 +521,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  accordionContent: {
+    marginVertical: 10,
+  },
 });
 
 type ClothingFormWrapperProps = {
@@ -545,6 +595,8 @@ const ClothingFormWrapper: React.FC<ClothingFormWrapperProps> = ({
           material: formData.material || undefined,
           fit: formData.fit,
           image_url: imageUrl || '',
+          external_link: formData.external_link || undefined,
+          vinted_link: formData.vinted_link || undefined,
         });
           
         if(newClothing) {
@@ -568,6 +620,8 @@ const ClothingFormWrapper: React.FC<ClothingFormWrapperProps> = ({
           material: formData.material === null ? undefined : formData.material,
           fit: formData.fit,
           image_url: imageUrl || '',
+          external_link: formData.external_link === null ? undefined : formData.external_link,
+          vinted_link: formData.vinted_link === null ? undefined : formData.vinted_link,
         };
         
         // Mettre à jour dans la base de données

@@ -12,17 +12,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
 import { ColorsTheme } from '@/constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import { STYLES } from '@/constants/Outfits';
 import { useAuth } from '@/contexts/AuthContext';
-import { PreferencesService } from '@/services';
 import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import Toast from 'react-native-toast-message';
 import Header from '@/components/Header';
 import { useTranslation } from '@/i18n/useTranslation';
+import { router } from 'expo-router';
 
 const { width } = Dimensions.get('window');
 const cardWidth = (width - 45) / 2; // 30 pour les paddings externes, 15 pour l'espacement entre les colonnes
@@ -33,7 +32,7 @@ type StyleItem = {
 };
 
 export default function PreferredStylesScreen() {
-  const { user } = useAuth();
+  const { user, changeUserPreferences, getUserPreferences } = useAuth();
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { t } = useTranslation();
@@ -47,7 +46,8 @@ export default function PreferredStylesScreen() {
   const loadPreferences = async () => {
     if (!user) return;
     try {
-      const preferences = await PreferencesService.getPreferences(user.id);
+      const preferences = await getUserPreferences();
+      console.log(preferences);
       if (preferences?.styles) {
         setSelectedStyles(preferences.styles);
       }
@@ -69,12 +69,13 @@ export default function PreferredStylesScreen() {
     
     try {
       setIsLoading(true);
-      await PreferencesService.updatePreferences(user.id, selectedStyles);
+      await changeUserPreferences({styles:selectedStyles});
       Toast.show({
         text1: t('success.saved'),
         type: 'success',
         visibilityTime: 3000,
       });
+      router.back();
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des préférences:', error);
       Alert.alert(t('errors.generic'), t('errors.tryAgain'));

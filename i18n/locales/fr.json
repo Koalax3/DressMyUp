@@ -112,11 +112,25 @@
     "generalError": "Une erreur s'est produite. Veuillez réessayer.",
     "shareMessage": "Découvrez mon vêtement \"{name}\" sur DressMatch!",
     "typeLabel": "Type",
+    "nameLabel": "Nom",
     "subtypeLabel": "Sous-type",
+    "selectSubtype": "Sélectionner un sous-type",
     "colorLabel": "Couleur",
     "patternLabel": "Motif",
+    "selectPattern": "Sélectionner un motif",
     "materialLabel": "Matériau",
+    "selectMaterial": "Sélectionner un matériau",
     "fitLabel": "Coupe",
+    "selectFit": "Sélectionner une coupe",
+    "links": "Liens",
+    "linksLabel": "Liens externes",
+    "externalLink": "Obtenir le vêtement",
+    "addExternalLink": "lien externe",
+    "externalLinkPlaceholder": "https://www.site-vetement.com/article",
+    "vintedLink": "Obtenir sur Vinted",
+    "addVintedLink": "lien Vinted",
+    "vintedLinkPlaceholder": "https://www.vinted.fr/article",
+    "externalLinkWarning": "Vous allez quitter l'application pour accéder à ce lien: {{url}}\n\nVoulez-vous continuer ?",
     "modifyButton": "Modifier",
     "createOutfitButton": "Créer une tenue",
     "referenceLabel": "Référence",
@@ -127,7 +141,13 @@
     "accept": "Accepter",
     "reject": "Refuser",
     "explore": "Explorer les tenues",
-    "findOutfitButton": "Trouver une tenue"
+    "findOutfitButton": "Trouver une tenue",
+    "complete": "Compléter",
+    "productFound": "Produit trouvé",
+    "name": "Nom",
+    "namePlaceholder": "Nom du vêtement",
+    "image": "Image",
+    "details": "Détails"
   },
   "explore": {
     "allStyles": "Tous les styles",
@@ -142,7 +162,7 @@
     "noDressMatchOutfitsFound": "Aucune tenue ne match avec votre garde-robe",
     "searchStyle": "Rechercher un style...",
     "title": "Explorer",
-    "wardrobe": "Garde-robe",
+    "wardrobe": "Garde-robe"
   },
   "outfit": {
     "deleteOutfit": "Supprimer la tenue",
@@ -313,7 +333,8 @@
     "deleteOutfitError": "Erreur lors de la suppression de la tenue:",
     "profileUpdateError": "Une erreur s'est produite lors de la mise à jour du profil",
     "avatarUploadError": "Une erreur s'est produite lors du téléchargement de l'avatar",
-    "error": "Erreur"
+    "error": "Erreur",
+    "externalLinkError": "Impossible d'ouvrir le lien externe"
   },
   "success": {
     "saved": "Enregistré avec succès",
@@ -337,6 +358,15 @@
     "loading": "Chargement...",
     "gallery": "Galerie",
     "camera": "Appareil photo"
+  },
+  "buttonLink": {
+    "openLink": "Ouvrir le lien",
+    "visitWebsite": "Visiter le site web",
+    "shopOnline": "Acheter en ligne",
+    "viewOnVinted": "Voir sur Vinted",
+    "leaveApp": "Quitter l'application",
+    "continueToLink": "Continuer vers le lien",
+    "openInBrowser": "Ouvrir dans le navigateur"
   },
   "clothingTypes": {
     "top": "Haut",
@@ -444,7 +474,7 @@
   "clothingMaterials": {
     "acrylic": "Acrylique",
     "alpaca": "Alpaga",
-    "bamboo": "Bambou",
+    "bamboo": "Bambu",
     "canvas": "Toile",
     "cardboard": "Carton",
     "cashmere": "Cachemire",
@@ -497,6 +527,9 @@
     "viscose": "Viscose",
     "wood": "Bois",
     "wool": "Laine"
+  },
+  "examples": {
+    "externalLinks": "Liens externes"
   },
   "colors": {
     "black": "Noir",

@@ -116,8 +116,13 @@
       "colorLabel": "Farbe",
       "patternLabel": "Muster",
       "materialLabel": "Material",
-      "fitLabel": "Schnitt",
-      "modifyButton": "Bearbeiten",
+      "fitLabel": "Passform",
+      "links": "Links",
+      "externalLink": "Externer Link",
+      "externalLinkPlaceholder": "https://www.kleidung-website.de/artikel",
+      "vintedLink": "Vinted Link",
+      "vintedLinkPlaceholder": "https://www.vinted.de/artikel",
+      "modifyButton": "Ändern",
       "createOutfitButton": "Outfit erstellen",
       "referenceLabel": "Referenz",
       "referencePlaceholder": "z.B.: 1234567890",
@@ -127,7 +132,12 @@
       "accept": "Akzeptieren",
       "reject": "Ablehnen",
       "explore": "Outfits erkunden",
-      "findOutfitButton": "Outfit finden"
+      "findOutfitButton": "Outfit finden",
+      "name": "Name",
+      "namePlaceholder": "Kleidungsname",
+      "image": "Bild",
+      "details": "Details",
+      "externalLinkWarning": "Sie sind dabei, die App zu verlassen und zu dieser URL zu navigieren: {{url}}\n\nMöchten Sie fortfahren?"
     },
     "explore": {
       "allStyles": "Alle Stile",
@@ -313,7 +323,8 @@
       "deleteOutfitError": "Fehler beim Löschen des Outfits:",
       "profileUpdateError": "Fehler beim Aktualisieren des Profils",
       "avatarUploadError": "Fehler beim Hochladen des Avatars",
-      "error": "Fehler"
+      "error": "Fehler",
+      "externalLinkError": "Externer Link konnte nicht geöffnet werden"
     },
     "success": {
       "saved": "Erfolgreich gespeichert",
@@ -523,5 +534,14 @@
       "orange": "Orange",
       "abricot": "Aprikose",
       "multicolor": "Mehrfarbig"
+    },
+    "buttonLink": {
+      "openLink": "Link öffnen",
+      "visitWebsite": "Website besuchen",
+      "shopOnline": "Online einkaufen",
+      "viewOnVinted": "Auf Vinted ansehen",
+      "leaveApp": "App verlassen",
+      "continueToLink": "Zum Link fortfahren",
+      "openInBrowser": "Im Browser öffnen"
     }
   }  

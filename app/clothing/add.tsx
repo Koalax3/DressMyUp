@@ -18,7 +18,6 @@ export default function AddClothingScreen() {
   const { t } = useTranslation();
   
   const [initialData, setInitialData] = useState<Partial<ClothingFormData>>({});
-  console.log(initialData);
   useEffect(() => {
     if (clothingToCopy) {
       // Formatage des données pour correspondre au type ClothingFormData

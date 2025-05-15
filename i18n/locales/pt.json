@@ -116,8 +116,13 @@
       "colorLabel": "Cor",
       "patternLabel": "Padrão",
       "materialLabel": "Material",
-      "fitLabel": "Corte",
-      "modifyButton": "Editar",
+      "fitLabel": "Caimento",
+      "links": "Links",
+      "externalLink": "Link externo",
+      "externalLinkPlaceholder": "https://www.loja-roupas.pt/artigo",
+      "vintedLink": "Link do Vinted",
+      "vintedLinkPlaceholder": "https://www.vinted.pt/artigo",
+      "modifyButton": "Modificar",
       "createOutfitButton": "Criar conjunto",
       "referenceLabel": "Referência",
       "referencePlaceholder": "Ex.: 1234567890",
@@ -127,7 +132,12 @@
       "accept": "Aceitar",
       "reject": "Rejeitar",
       "explore": "Explorar conjuntos",
-      "findOutfitButton": "Encontrar um conjunto"
+      "findOutfitButton": "Encontrar um conjunto",
+      "name": "Nome",
+      "namePlaceholder": "Nome da roupa",
+      "image": "Imagem",
+      "details": "Detalhes",
+      "externalLinkWarning": "Está prestes a sair da aplicação e navegar para: {{url}}\n\nDeseja continuar?"
     },
     "explore": {
       "allStyles": "Todos os estilos",
@@ -313,7 +323,8 @@
       "deleteOutfitError": "Erro ao eliminar o conjunto:",
       "profileUpdateError": "Erro ao atualizar o perfil",
       "avatarUploadError": "Erro ao carregar o avatar",
-      "error": "Erro"
+      "error": "Erro",
+      "externalLinkError": "Não foi possível abrir o link externo"
     },
     "success": {
       "saved": "Guardado com sucesso",
@@ -523,6 +534,15 @@
       "orange": "Laranja",
       "abricot": "Alperce",
       "multicolor": "Multicolor"
+    },
+    "buttonLink": {
+      "openLink": "Abrir link",
+      "visitWebsite": "Visitar site",
+      "shopOnline": "Comprar online",
+      "viewOnVinted": "Ver no Vinted",
+      "leaveApp": "Sair da aplicação",
+      "continueToLink": "Continuar para o link",
+      "openInBrowser": "Abrir no navegador"
     }
   }
   

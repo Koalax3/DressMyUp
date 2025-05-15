@@ -20,12 +20,12 @@ export const updatePreferences = async (userId: string, styles: string[]) => {
     .from('preferences')
     .select('id')
     .eq('user_id', userId)
-    .single();
+    .maybeSingle();
 
   if (checkError && checkError.code !== 'PGRST116') { // PGRST116 est le code d'erreur pour "aucun résultat"
     throw new Error(`Erreur lors de la vérification des préférences: ${checkError.message}`);
   }
-
+  
   const { data, error } = await supabase
     .from('preferences')
     .upsert({

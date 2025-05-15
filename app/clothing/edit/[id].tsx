@@ -40,7 +40,9 @@ export default function EditClothingScreen() {
             pattern: clothingItem.pattern,
             material: clothingItem.material,
             fit: clothingItem.fit,
-            image_url: clothingItem.image_url
+            image_url: clothingItem.image_url,
+            external_link: clothingItem.external_link,
+            vinted_link: clothingItem.vinted_link
           });
         }
       } catch (error) {
