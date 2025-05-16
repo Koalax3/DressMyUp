@@ -313,15 +313,19 @@
       "deleteOutfitError": "Errore nell'eliminazione dell'outfit:",
       "profileUpdateError": "Errore nell'aggiornamento del profilo",
       "avatarUploadError": "Errore nel caricamento dell'avatar",
-      "error": "Errore"
+      "error": "Errore",
+      "externalLinkError": "Impossibile aprire il link esterno",
+      "clothingSaveError": "Si è verificato un errore durante il salvataggio del capo d'abbigliamento"
     },
     "success": {
       "saved": "Salvato con successo",
       "deleted": "Eliminato con successo",
       "updated": "Aggiornato con successo",
       "accountCreated": "Account creato con successo",
-      "changeLanguage": "Ora sei in italiano!",
-      "profileUpdated": "Profilo aggiornato con successo"
+      "changeLanguage": "Sei in italiano!",
+      "profileUpdated": "Profilo aggiornato con successo",
+      "clothingAdded": "Capo d'abbigliamento aggiunto con successo",
+      "clothingUpdated": "Capo d'abbigliamento aggiornato con successo"
     },
     "navigation": {
       "wardrobe": "Guardaroba",

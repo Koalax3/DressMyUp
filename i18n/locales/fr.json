@@ -334,7 +334,8 @@
     "profileUpdateError": "Une erreur s'est produite lors de la mise à jour du profil",
     "avatarUploadError": "Une erreur s'est produite lors du téléchargement de l'avatar",
     "error": "Erreur",
-    "externalLinkError": "Impossible d'ouvrir le lien externe"
+    "externalLinkError": "Impossible d'ouvrir le lien externe",
+    "clothingSaveError": "Une erreur s'est produite lors de l'enregistrement du vêtement"
   },
   "success": {
     "saved": "Enregistré avec succès",
@@ -342,7 +343,9 @@
     "updated": "Mis à jour avec succès",
     "accountCreated": "Compte créé avec succès",
     "changeLanguage": "Vous êtes en français !",
-    "profileUpdated": "Profil mis à jour avec succès"
+    "profileUpdated": "Profil mis à jour avec succès",
+    "clothingAdded": "Vêtement ajouté avec succès",
+    "clothingUpdated": "Vêtement mis à jour avec succès"
   },
   "navigation": {
     "wardrobe": "Garde-robe",

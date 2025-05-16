@@ -313,15 +313,19 @@
       "deleteOutfitError": "خطأ في حذف الإطلالة:",
       "profileUpdateError": "خطأ في تحديث الملف الشخصي",
       "avatarUploadError": "خطأ في تحميل الصورة الرمزية",
-      "error": "خطأ"
+      "error": "خطأ",
+      "externalLinkError": "تعذر فتح الرابط الخارجي",
+      "clothingSaveError": "حدث خطأ أثناء حفظ الملابس"
     },
     "success": {
       "saved": "تم الحفظ بنجاح",
       "deleted": "تم الحذف بنجاح",
       "updated": "تم التحديث بنجاح",
       "accountCreated": "تم إنشاء الحساب بنجاح",
-      "changeLanguage": "أنت الآن تستخدم العربية!",
-      "profileUpdated": "تم تحديث الملف الشخصي بنجاح"
+      "changeLanguage": "أنت الآن باللغة العربية!",
+      "profileUpdated": "تم تحديث الملف الشخصي بنجاح",
+      "clothingAdded": "تمت إضافة الملابس بنجاح",
+      "clothingUpdated": "تم تحديث الملابس بنجاح"
     },
     "navigation": {
       "wardrobe": "الخزانة",

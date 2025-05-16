@@ -139,7 +139,9 @@ const ClothingForm: React.FC<ClothingFormProps> = ({
 
   // Vérifier la référence quand elle change
   useEffect(() => {
-    checkReference(reference);
+    if (reference !== initialData.reference) {
+      checkReference(reference);
+    }
   }, [reference, checkReference]);
 
   // Obtenir les sous-types pour le type sélectionné

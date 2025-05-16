@@ -102,8 +102,7 @@ const ImagePicker: React.FC<ImagePickerProps> = ({
     <View style={styles.container}>
       {imageUri ? (
         <View style={styles.imageContainer}>
-          <Image source={{ uri: imageUri }} style={styles.image} />
-          
+          <Image source={{ uri: imageUri }} style={styles.image} />          
           {uploading ? (
             <View style={[styles.uploadingOverlay, { backgroundColor: 'rgba(0, 0, 0, 0.6)' }]}>
               <ActivityIndicator size="large" color={colors.primary.main} />

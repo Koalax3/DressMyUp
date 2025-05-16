@@ -324,15 +324,18 @@
       "profileUpdateError": "Fehler beim Aktualisieren des Profils",
       "avatarUploadError": "Fehler beim Hochladen des Avatars",
       "error": "Fehler",
-      "externalLinkError": "Externer Link konnte nicht geöffnet werden"
+      "externalLinkError": "Externer Link kann nicht geöffnet werden",
+      "clothingSaveError": "Beim Speichern des Kleidungsstücks ist ein Fehler aufgetreten"
     },
     "success": {
       "saved": "Erfolgreich gespeichert",
       "deleted": "Erfolgreich gelöscht",
       "updated": "Erfolgreich aktualisiert",
       "accountCreated": "Konto erfolgreich erstellt",
-      "changeLanguage": "Sie sind auf Deutsch!",
-      "profileUpdated": "Profil erfolgreich aktualisiert"
+      "changeLanguage": "Du bist jetzt auf Deutsch!",
+      "profileUpdated": "Profil erfolgreich aktualisiert",
+      "clothingAdded": "Kleidungsstück erfolgreich hinzugefügt",
+      "clothingUpdated": "Kleidungsstück erfolgreich aktualisiert"
     },
     "navigation": {
       "wardrobe": "Kleiderschrank",

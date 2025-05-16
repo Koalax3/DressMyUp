@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, Share } from 'react-native';
+import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert, TextInput, Share, Modal, StatusBar } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,6 +22,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { getThemeColors } from '@/constants/Colors';
 import { useClothing } from '@/contexts/ClothingContext';
 import { useTranslation } from '@/i18n/useTranslation';
+import ImageViewer from 'react-native-image-zoom-viewer';
 
 // Définir le type localement pour correspondre exactement à ce que nous utilisons
 interface OutfitWithDetails extends Outfit {
@@ -47,6 +48,7 @@ export default function OutfitDetailScreen() {
   const { isDarkMode } = useTheme();
   const { clothes } = useClothing();
   const colors = getThemeColors(isDarkMode);
+  const [fullscreenImage, setFullscreenImage] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -284,13 +286,46 @@ export default function OutfitDetailScreen() {
 
           {outfit.image_url && (
             <View style={styles.outfitImageContainer}>
-              <Image 
-                source={{ uri: outfit.image_url }} 
-                style={styles.outfitImage}
-                resizeMode="cover"
-              />
+              <TouchableOpacity 
+                onPress={() => setFullscreenImage(true)} 
+                activeOpacity={0.9}
+                style={{ width: '100%', height: '100%' }}
+              >
+                <Image 
+                  source={{ uri: outfit.image_url }} 
+                  style={styles.outfitImage}
+                  resizeMode="contain"
+                />
+              </TouchableOpacity>
             </View>
           )}
+
+          <Modal
+            visible={fullscreenImage}
+            transparent={true}
+            animationType="fade"
+            onRequestClose={() => setFullscreenImage(false)}
+          >
+            <StatusBar hidden={fullscreenImage} />
+            {outfit.image_url && (
+              <ImageViewer
+                imageUrls={[{ url: outfit.image_url }]}
+                enableSwipeDown={true}
+                onCancel={() => setFullscreenImage(false)}
+                saveToLocalByLongPress={false}
+                backgroundColor="rgba(0, 0, 0, 0.9)"
+                renderHeader={() => (
+                  <TouchableOpacity 
+                    style={styles.fullscreenCloseButton} 
+                    onPress={() => setFullscreenImage(false)}
+                  >
+                    <Ionicons name="close" size={30} color={colors.white} />
+                  </TouchableOpacity>
+                )}
+                renderIndicator={() => <View/>}
+              />
+            )}
+          </Modal>
 
           <View style={[styles.userInfo, { borderBottomColor: colors.text.lighter }]}>
             <TouchableOpacity 
@@ -475,8 +510,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   outfitImageContainer: {
-    height: 600,
-    objectFit: 'contain',
+    height: 500,
+    width: '100%',
   },
   outfitImage: {
     flex: 1,
@@ -635,5 +670,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     padding: 15,
     borderRadius: 8,
+  },
+  fullscreenCloseButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
   },
 }); 

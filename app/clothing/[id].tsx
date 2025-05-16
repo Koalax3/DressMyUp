@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Share } from 'react-native';
+import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Share, Modal, StatusBar } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClothing } from '../../contexts/ClothingContext';
 import { ClothingItem } from '../../types';
@@ -18,6 +18,8 @@ import { useTranslation } from '@/i18n/useTranslation';
 import { useOutfit } from '@/contexts/OutfitContext';
 import ButtonLink from '@/components/ui/ButtonLink';
 import VintedLogo from '@/assets/images/vinted.svg';
+import ImageViewer from 'react-native-image-zoom-viewer';
+
 export default function ClothingDetailScreen() {
   const { id } = useLocalSearchParams();
   const { user } = useAuth();
@@ -29,6 +31,7 @@ export default function ClothingDetailScreen() {
   const { isDarkMode } = useTheme();
   const colors = getThemeColors(isDarkMode);
   const { t } = useTranslation();
+  const [fullscreenImage, setFullscreenImage] = useState(false);
   
   // Récupérer le vêtement au chargement avec la fonction loadClothing qui gère les vêtements de tous les utilisateurs
   const fetchClothing = async () => {
@@ -172,7 +175,9 @@ export default function ClothingDetailScreen() {
         </Header>
 
         <View style={styles.imageContainer}>
-          <Image source={{ uri: clothingItem.image_url }} style={[styles.image, { backgroundColor: colors.gray }]} />
+          <TouchableOpacity onPress={() => setFullscreenImage(true)}>
+            <Image source={{ uri: clothingItem.image_url }} style={[styles.image, { backgroundColor: colors.gray }]} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.infoContainer}>
@@ -251,6 +256,31 @@ export default function ClothingDetailScreen() {
           </View>}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={fullscreenImage}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setFullscreenImage(false)}
+      >
+        <StatusBar hidden={fullscreenImage} />
+        <ImageViewer
+          imageUrls={[{ url: clothingItem.image_url }]}
+          enableSwipeDown={true}
+          onCancel={() => setFullscreenImage(false)}
+          saveToLocalByLongPress={false}
+          backgroundColor="rgba(0, 0, 0, 0.9)"
+          renderHeader={() => (
+            <TouchableOpacity 
+              style={styles.fullscreenCloseButton} 
+              onPress={() => setFullscreenImage(false)}
+            >
+              <Ionicons name="close" size={30} color={colors.white} />
+            </TouchableOpacity>
+          )}
+          renderIndicator={() => <View/>}
+        />
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -298,7 +328,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: '90%',
-    height: 500,
+    height: 300,
     aspectRatio: 3/4,
     objectFit: 'contain',
     borderRadius: 15,
@@ -429,5 +459,28 @@ const styles = StyleSheet.create({
   },
   externalLink: {
     marginVertical: 8,
+  },
+  fullscreenModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenContainer: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullscreenImage: {
+    width: '90%',
+    height: '90%',
+  },
+  fullscreenCloseButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 10,
+    padding: 10,
   },
 }); 
